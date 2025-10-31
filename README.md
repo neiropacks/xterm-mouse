@@ -1,32 +1,45 @@
-# @neiropacks/packs-template - Ink Package Template
+# xterm-mouse - Bring mouse interaction to your Node.js terminal apps.
 
-This repository serves as a template for creating packages for [Ink](https://github.com/vadimdemedes/ink), a React renderer for command-line apps.
+This library provides a simple way to capture and parse mouse events from xterm-compatible terminals in Node.js applications.
+
+## Features
+
+*   Captures mouse events (clicks, drags, movements, wheel scrolls).
+*   Supports SGR and ESC mouse protocols.
+*   Provides parsed mouse event data including button, action, coordinates, and modifier keys (Shift, Alt, Ctrl).
 
 ## Getting Started
 
-To use this template:
+### Installation
 
-1.  **Clone the repository:**
-    ```bash
-    git clone git@github.com:neiropacks/packs-template.git your-package-name
-    cd your-package-name
-    ```
-2.  **Install dependencies:**
-    ```bash
-    bun install
-    ```
-3.  **Rename the package:**
-    *   Update the `name` field in `package.json` to your desired package name (e.g., `your-package-name`).
-    *   If you intend to publish under a different npm scope, update `@neiros` in `package.json` and in the GitHub Actions workflow (`.github/workflows/publish.yml`).
-4.  **Start developing:**
-    *   Your main library code should reside in `src/`.
-    *   Hooks go into `src/hooks/`.
-    *   Providers go into `src/components/providers/`.
-    *   Utility functions go into `src/utils/`.
+```bash
+bun add xterm-mouse
+# or
+npm install xterm-mouse
+# or
+yarn add xterm-mouse
+```
+
+### Usage
+
+```typescript
+import { TuiMouse } from 'xterm-mouse';
+
+const mouse = new TuiMouse();
+
+mouse.on('data', (event) => {
+  console.log('Mouse event:', event);
+});
+
+mouse.enable();
+
+// Don't forget to disable mouse tracking when your application exits
+process.on('exit', () => {
+  mouse.disable();
+});
+```
 
 ## Available Commands
-
-After setting up the repository and installing dependencies, you can use the following commands:
 
 *   **`bun run build`**: Compiles the TypeScript code into JavaScript and generates type declaration files.
 *   **`bun run lint`**: Runs ESLint and Biome checks to identify code quality issues.
