@@ -6,7 +6,26 @@ on:
       - 'v*.*.*'
 
 jobs:
+  changelog:
+    uses: ./.github/workflows/changelog.yml
+
+  release:
+    needs: changelog
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: ${{ needs.changelog.outputs.changelog }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   publish:
+    needs: release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

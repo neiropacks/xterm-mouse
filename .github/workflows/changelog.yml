@@ -1,0 +1,74 @@
+name: Generate Changelog
+
+on:
+  workflow_call:
+    outputs:
+      changelog:
+        description: "Generated changelog"
+        value: ${{ jobs.generate.outputs.changelog }}
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    outputs:
+      changelog: ${{ steps.set-output.outputs.changelog }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Generate grouped changelog with links
+        id: set-output
+        run: |
+          REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            RANGE="${PREV_TAG}..HEAD"
+            echo "## Changes since $PREV_TAG" > CHANGELOG.md
+          else
+            RANGE="HEAD"
+            echo "## Initial release" > CHANGELOG.md
+          fi
+          echo "" >> CHANGELOG.md
+
+          group() {
+            local title="$1"
+            local pattern="$2"
+            local commits=$(git log --pretty=format:"%H|%s" $RANGE | awk -F'|' -v pat="$pattern" '$2 ~ pat {print}')
+            if [ -n "$commits" ]; then
+              echo "### $title" >> CHANGELOG.md
+              while IFS="|" read -r hash subject; do
+                short_hash=$(echo "$hash" | cut -c1-7)
+                commit_link="[$short_hash](${REPO_URL}/commit/${hash})"
+                subject_with_links=$(echo "$subject" | sed -E "s|#([0-9]+)|[#\1](${REPO_URL}/pull/\1)|g")
+                echo "- ${subject_with_links} (${commit_link})" >> CHANGELOG.md
+              done <<< "$commits"
+              echo "" >> CHANGELOG.md
+            fi
+          }
+
+          group "✨ Features" "^feat"
+          group "🐛 Fixes" "^fix"
+          group "📚 Documentation" "^docs"
+          group "♻ Refactoring" "^refactor"
+          group "🚀 CI/CD" "^ci"
+          group "🧪 Tests" "^test"
+          group "⚙ Build" "^build"
+          group "🔧 Chore" "^chore"
+
+          OTHER=$(git log --pretty=format:"%H|%s" $RANGE | awk -F'|' '$2 !~ /^(feat|fix|docs|refactor|ci|test|build|chore)/')
+          if [ -n "$OTHER" ]; then
+            echo "### Other changes" >> CHANGELOG.md
+            while IFS="|" read -r hash subject; do
+              short_hash=$(echo "$hash" | cut -c1-7)
+              commit_link="[$short_hash](${REPO_URL}/commit/${hash})"
+              subject_with_links=$(echo "$subject" | sed -E "s|#([0-9]+)|[#\1](${REPO_URL}/pull/\1)|g")
+              echo "- ${subject_with_links} (${commit_link})" >> CHANGELOG.md
+            done <<< "$OTHER"
+            echo "" >> CHANGELOG.md
+          fi
+
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat CHANGELOG.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
