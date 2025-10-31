@@ -7,8 +7,9 @@ import unusedImports from 'eslint-plugin-unused-imports';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import biome from 'eslint-config-biome';
+import { defineConfig } from 'eslint/config';
 
-export default tseslint.config(
+export default defineConfig(
   // Global ignores
   {
     ignores: ['dist/**'],
