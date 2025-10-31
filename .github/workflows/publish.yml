@@ -12,6 +12,8 @@ jobs:
   release:
     needs: changelog
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Create Release
         uses: actions/create-release@v1
