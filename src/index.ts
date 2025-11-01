@@ -1,2 +1,2 @@
-export * from './core/TuiMouse';
+export * from './core/Mouse';
 export * from './types';

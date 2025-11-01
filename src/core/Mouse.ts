@@ -4,7 +4,7 @@ import { ANSI_CODES } from '../parser/constants';
 import { parseMouseEvent } from '../parser/ansiParser';
 import type { MouseEvent } from '../types';
 
-class TuiMouse {
+class Mouse {
   constructor(
     private inputStream: NodeJS.ReadStream = process.stdin,
     private outputStream: NodeJS.WriteStream = process.stdout,
@@ -46,4 +46,4 @@ class TuiMouse {
   };
 }
 
-export { TuiMouse };
+export { Mouse };
