@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 
 import { ANSI_CODES } from '../parser/constants';
 import { parseMouseEvent } from '../parser/ansiParser';
-import type { MouseEvent } from '../types';
+import type { MouseEvent, MouseEventAction } from '../types';
 
 class Mouse {
   constructor(
@@ -14,7 +14,7 @@ class Mouse {
   private handleEvent = (data: Buffer): void => {
     const event = parseMouseEvent(data.toString());
     if (event) {
-      this.emitter.emit('data', event);
+      this.emitter.emit(event.action, event);
     }
   };
 
@@ -37,11 +37,11 @@ class Mouse {
     );
   };
 
-  public on = (event: string, listener: (event: MouseEvent) => void): EventEmitter => {
+  public on = (event: MouseEventAction, listener: (event: MouseEvent) => void): EventEmitter => {
     return this.emitter.on(event, listener);
   };
 
-  public off = (event: string, listener: (event: MouseEvent) => void): EventEmitter => {
+  public off = (event: MouseEventAction, listener: (event: MouseEvent) => void): EventEmitter => {
     return this.emitter.off(event, listener);
   };
 }
