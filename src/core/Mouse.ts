@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 
 import { ANSI_CODES } from '../parser/constants';
 import { parseMouseEvent } from '../parser/ansiParser';
-import type { MouseEvent, MouseEventType } from '../types';
+import type { MouseEvent, MouseEventType, ReadableStreamWithEncoding } from '../types';
 
 class Mouse {
   private enabled = false;
@@ -10,7 +10,7 @@ class Mouse {
   private previousRawMode: boolean | null = null;
 
   constructor(
-    private inputStream: NodeJS.ReadStream = process.stdin,
+    private inputStream: ReadableStreamWithEncoding = process.stdin,
     private outputStream: NodeJS.WriteStream = process.stdout,
     private emitter: EventEmitter = new EventEmitter(),
   ) {}
@@ -46,7 +46,7 @@ class Mouse {
 
     try {
       this.previousRawMode = this.inputStream.isRaw ?? false;
-      this.previousEncoding = (this.inputStream as any).readableEncoding || null;
+      this.previousEncoding = this.inputStream.readableEncoding || null;
 
       this.enabled = true;
 
@@ -137,7 +137,10 @@ class Mouse {
     try {
       while (true) {
         if (queue.length > 0) {
-          yield queue.shift()!;
+          const event = queue.shift();
+          if (event) {
+            yield event;
+          }
         } else if (latest !== null) {
           const ev = latest;
           latest = null;
@@ -202,7 +205,10 @@ class Mouse {
     try {
       while (true) {
         if (queue.length > 0) {
-          yield queue.shift()!;
+          const event = queue.shift();
+          if (event) {
+            yield event;
+          }
         } else if (latest !== null) {
           const ev = latest;
           latest = null;

@@ -35,3 +35,7 @@ export type ESCMouseEvent = MouseEventBase & {
 };
 
 export type MouseEvent = SGRMouseEvent | ESCMouseEvent;
+
+export interface ReadableStreamWithEncoding extends NodeJS.ReadStream {
+  readableEncoding: BufferEncoding | null;
+}
