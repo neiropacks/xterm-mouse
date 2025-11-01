@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 
 import { ANSI_CODES } from '../parser/constants';
 import { parseMouseEvent } from '../parser/ansiParser';
-import type { MouseEvent, MouseEventAction } from '../types';
+import type { MouseEvent, MouseEventType } from '../types';
 
 class Mouse {
   constructor(
@@ -14,7 +14,15 @@ class Mouse {
   private handleEvent = (data: Buffer): void => {
     const event = parseMouseEvent(data.toString());
     if (event) {
-      this.emitter.emit(event.action, event);
+      if (event.action === 'release' && event.button === 'none') {
+        this.emitter.emit('hover', event);
+      } else if (event.action === 'release' && event.button !== 'none') {
+        this.emitter.emit('release', event);
+      } else if (event.button.startsWith('wheel-') && event.action === 'press') {
+        this.emitter.emit('wheel', event);
+      } else {
+        this.emitter.emit(event.action, event);
+      }
     }
   };
 
@@ -37,11 +45,11 @@ class Mouse {
     );
   };
 
-  public on = (event: MouseEventAction, listener: (event: MouseEvent) => void): EventEmitter => {
+  public on = (event: MouseEventType, listener: (event: MouseEvent) => void): EventEmitter => {
     return this.emitter.on(event, listener);
   };
 
-  public off = (event: MouseEventAction, listener: (event: MouseEvent) => void): EventEmitter => {
+  public off = (event: MouseEventType, listener: (event: MouseEvent) => void): EventEmitter => {
     return this.emitter.off(event, listener);
   };
 }

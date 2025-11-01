@@ -110,5 +110,13 @@ export default defineConfig(
       'react/prop-types': 'off', // Often not needed in TypeScript projects
     },
   },
+  {
+    files: ['examples/**/*.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        project: 'examples/tsconfig.json',
+      },
+    },
+  },
   biome,
 );

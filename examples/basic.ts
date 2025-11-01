@@ -16,6 +16,14 @@ mouse.on('release', (event) => {
   console.log('Release event:', event);
 });
 
+mouse.on('hover', (event) => {
+  console.log('Hover event:', event);
+});
+
+mouse.on('wheel', (event) => {
+  console.log('Wheel event:', event);
+});
+
 mouse.enable();
 
 process.stdin.on('data', (data) => {

@@ -12,6 +12,7 @@ export type ButtonType =
   | 'unknown';
 
 export type MouseEventAction = 'move' | 'release' | 'press';
+export type MouseEventType = MouseEventAction | 'hover' | 'wheel';
 
 export type MouseEventBase = {
   x: number;

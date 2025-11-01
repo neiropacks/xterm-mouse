@@ -16,7 +16,7 @@
   "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "build": "bun build ./src/index.ts --outdir ./dist --sourcemap && tsc --emitDeclarationOnly",
+    "build": "bun build ./src/index.ts --outdir ./dist --sourcemap && tsc --emitDeclarationOnly --project tsconfig.json",
     "lint": "eslint . && biome check .",
     "format": "biome format --write . && eslint --fix .",
     "lint:fix": "eslint --fix .",
