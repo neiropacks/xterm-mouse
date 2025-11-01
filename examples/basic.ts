@@ -5,23 +5,23 @@ const mouse = new Mouse();
 console.log("Enabling mouse tracking... Press 'q' to exit.");
 
 mouse.on('press', (event) => {
-  console.log('Press event:', event);
+  console.log('Press event:', JSON.stringify(event));
 });
 
 mouse.on('move', (event) => {
-  console.log('Move event:', event);
+  console.log('Move event:', JSON.stringify(event));
 });
 
 mouse.on('release', (event) => {
-  console.log('Release event:', event);
+  console.log('Release event:', JSON.stringify(event));
 });
 
 mouse.on('hover', (event) => {
-  console.log('Hover event:', event);
+  console.log('Hover event:', JSON.stringify(event));
 });
 
 mouse.on('wheel', (event) => {
-  console.log('Wheel event:', event);
+  console.log('Wheel event:', JSON.stringify(event));
 });
 
 mouse.enable();

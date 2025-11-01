@@ -21,7 +21,7 @@
     "format": "biome format --write . && eslint --fix .",
     "lint:fix": "eslint --fix .",
     "biome:check": "biome check --write --unsafe .",
-    "dev": "bun run examples/basic.ts"
+    "dev": "bun --hot examples/basic.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.2",
