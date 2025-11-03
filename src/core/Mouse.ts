@@ -17,11 +17,13 @@ class Mouse {
 
   private handleEvent = (data: Buffer): void => {
     try {
-      const event = parseMouseEvent(data.toString());
-      if (!event) {
+      const events = parseMouseEvent(data.toString());
+      if (!events) {
         return;
       }
-      this.emitter.emit(event.action, event);
+      events.forEach((event) => {
+        this.emitter.emit(event.action, event);
+      });
     } catch (err) {
       this.emitter.emit('error', err);
     }

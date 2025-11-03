@@ -18,10 +18,10 @@ const ANSI_CODES = {
 
 const ANSI_RESPONSE_PATTERNS = {
   // biome-ignore lint/suspicious/noControlCharactersInRegex: need for mouse events
-  sgrPattern: /^\x1b\[<(\d+);(\d+);(\d+)([Mm])$/,
+  sgrPattern: /^\x1b\[<(\d+);(\d+);(\d+)([Mm])/g,
 
   // biome-ignore lint/suspicious/noControlCharactersInRegex: need for mouse events
-  escPattern: /^\x1b\[M([\x20-\x7f])([\x20-\x7f])([\x20-\x7f])/,
+  escPattern: /^\x1b\[M([\x20-\x7f])([\x20-\x7f])([\x20-\x7f])/g,
 };
 
 export { ANSI_CODES, ANSI_RESPONSE_PATTERNS };
