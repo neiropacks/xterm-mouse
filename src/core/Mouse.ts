@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 
 import { ANSI_CODES } from '../parser/constants';
 import { parseMouseEvent } from '../parser/ansiParser';
-import type { MouseEvent, MouseEventType, ReadableStreamWithEncoding } from '../types';
+import type { MouseEvent, MouseEventAction, ReadableStreamWithEncoding } from '../types';
 
 class Mouse {
   private enabled = false;
@@ -21,15 +21,7 @@ class Mouse {
       if (!event) {
         return;
       }
-      if (event.action === 'release' && event.button === 'none') {
-        this.emitter.emit('hover', event);
-      } else if (event.action === 'release' && event.button !== 'none') {
-        this.emitter.emit('release', event);
-      } else if (event.button.startsWith('wheel-') && event.action === 'press') {
-        this.emitter.emit('wheel', event);
-      } else {
-        this.emitter.emit(event.action, event);
-      }
+      this.emitter.emit(event.action, event);
     } catch (err) {
       this.emitter.emit('error', err);
     }
@@ -93,16 +85,16 @@ class Mouse {
     }
   };
 
-  public on = (event: MouseEventType | 'error', listener: (event: MouseEvent) => void): EventEmitter => {
+  public on = (event: MouseEventAction | 'error', listener: (event: MouseEvent) => void): EventEmitter => {
     return this.emitter.on(event, listener);
   };
 
-  public off = (event: MouseEventType | 'error', listener: (event: MouseEvent) => void): EventEmitter => {
+  public off = (event: MouseEventAction | 'error', listener: (event: MouseEvent) => void): EventEmitter => {
     return this.emitter.off(event, listener);
   };
 
   public async *eventsOf(
-    type: MouseEventType,
+    type: MouseEventAction,
     { latestOnly = false, maxQueue = 100 }: { latestOnly?: boolean; maxQueue?: number } = {},
   ): AsyncGenerator<MouseEvent> {
     const queue: MouseEvent[] = [];
@@ -164,14 +156,14 @@ class Mouse {
   }: {
     latestOnly?: boolean;
     maxQueue?: number;
-  } = {}): AsyncGenerator<{ type: MouseEventType; event: MouseEvent }> {
-    const queue: { type: MouseEventType; event: MouseEvent }[] = [];
-    let latest: { type: MouseEventType; event: MouseEvent } | null = null;
-    let resolveNext: ((value: { type: MouseEventType; event: MouseEvent }) => void) | null = null;
+  } = {}): AsyncGenerator<{ type: MouseEventAction; event: MouseEvent }> {
+    const queue: { type: MouseEventAction; event: MouseEvent }[] = [];
+    let latest: { type: MouseEventAction; event: MouseEvent } | null = null;
+    let resolveNext: ((value: { type: MouseEventAction; event: MouseEvent }) => void) | null = null;
     let rejectNext: ((err: Error) => void) | null = null;
 
-    const handlers = new Map<MouseEventType, (ev: MouseEvent) => void>();
-    const allEvents: MouseEventType[] = ['press', 'release', 'hover', 'wheel', 'move'];
+    const handlers = new Map<MouseEventAction, (ev: MouseEvent) => void>();
+    const allEvents: MouseEventAction[] = ['press', 'release', 'drag', 'wheel', 'move'];
 
     allEvents.forEach((type) => {
       const handler = (ev: MouseEvent): void => {
@@ -214,7 +206,7 @@ class Mouse {
           latest = null;
           yield ev;
         } else {
-          yield await new Promise<{ type: MouseEventType; event: MouseEvent }>((resolve, reject) => {
+          yield await new Promise<{ type: MouseEventAction; event: MouseEvent }>((resolve, reject) => {
             resolveNext = resolve;
             rejectNext = reject;
           });

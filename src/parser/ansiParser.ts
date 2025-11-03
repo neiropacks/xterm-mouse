@@ -1,4 +1,4 @@
-import type { ButtonType, MouseEventAction, SGRMouseEvent, ESCMouseEvent } from '../types';
+import type { ButtonType, SGRMouseEvent, ESCMouseEvent, MouseEventAction } from '../types';
 
 import { ANSI_RESPONSE_PATTERNS } from './constants';
 
@@ -77,11 +77,11 @@ function parseSGRMouseEvent(str: string): SGRMouseEvent | null {
 
   let action: MouseEventAction;
   if (motion) {
-    action = 'move';
-  } else if (type === 'm') {
+    action = button === 'none' ? 'move' : 'drag';
+  } else if (type === 'm' || base === 3) {
     action = 'release';
   } else {
-    action = base === 3 ? 'release' : 'press';
+    action = button.startsWith('wheel-') ? 'wheel' : 'press';
   }
 
   return {
@@ -118,11 +118,11 @@ function parseESCMouseEvent(str: string): ESCMouseEvent | null {
 
   let action: MouseEventAction;
   if (motion) {
-    action = 'move';
+    action = button === 'none' ? 'move' : 'drag';
   } else if ((cb & 3) === 3) {
     action = 'release';
   } else {
-    action = 'press';
+    action = button.startsWith('wheel-') ? 'wheel' : 'press';
   }
 
   return {

@@ -16,8 +16,8 @@ mouse.on('release', (event) => {
   console.log('Release event:', JSON.stringify(event));
 });
 
-mouse.on('hover', (event) => {
-  console.log('Hover event:', JSON.stringify(event));
+mouse.on('drag', (event) => {
+  console.log('Drag event:', JSON.stringify(event));
 });
 
 mouse.on('wheel', (event) => {

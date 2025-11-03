@@ -1,8 +1,10 @@
+type NoneButton = 'none';
+
 export type ButtonType =
+  | NoneButton
   | 'left'
   | 'middle'
   | 'right'
-  | 'none'
   | 'wheel-up'
   | 'wheel-down'
   | 'wheel-left'
@@ -11,8 +13,7 @@ export type ButtonType =
   | 'forward'
   | 'unknown';
 
-export type MouseEventAction = 'move' | 'release' | 'press';
-export type MouseEventType = MouseEventAction | 'hover' | 'wheel';
+export type MouseEventAction = 'move' | 'release' | 'press' | 'drag' | 'wheel';
 
 export type MouseEventBase = {
   x: number;
