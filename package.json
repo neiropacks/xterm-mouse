@@ -22,7 +22,7 @@
   "scripts": {
     "build": "bun build ./src/index.ts --outdir ./dist --sourcemap --minify && tsc --emitDeclarationOnly --project tsconfig.json",
     "lint": "eslint . && biome check .",
-    "format": "biome format --write . && eslint --fix .",
+    "format": "biome check --write . && eslint --fix .",
     "lint:fix": "eslint --fix .",
     "biome:check": "biome check --write --unsafe .",
     "dev:basic": "bun run --watch examples/basic.ts",
