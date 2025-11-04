@@ -119,7 +119,9 @@ main().catch(console.error);
 
 ## For Developers
 
-This section provides information for developers who want to contribute to or build upon `xterm-mouse`.
+### Project Status
+
+This library is currently in its early stages of development. While efforts are made to ensure stability and correctness, it is provided "as is" and its use is at your own risk. We welcome contributions! Feel free to open issues or submit pull requests.
 
 ### Available Commands
 
