@@ -26,7 +26,9 @@
     "lint:fix": "eslint --fix .",
     "biome:check": "biome check --write --unsafe .",
     "dev:basic": "bun run --watch examples/basic.ts",
-    "dev:streaming": "bun run --watch examples/streaming.ts"
+    "dev:streaming": "bun run --watch examples/streaming.ts",
+    "test": "bun test",
+    "coverage": "bun test --coverage"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.2",
