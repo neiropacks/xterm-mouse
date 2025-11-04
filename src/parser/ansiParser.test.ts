@@ -17,6 +17,59 @@ const ESC_WHEEL_UP = '\x1b[M`#4'; // button 64, x=3, y=20
 const ESC_WHEEL_DOWN = '\x1b[Ma#4'; // button 65, x=3, y=20
 const ESC_MOVE = '\x1b[MC#4'; // button 3 + motion, x=3, y=20
 
+// New tests for uncovered cases
+test('parseSGRMouseEvent should parse SGR middle button press', () => {
+  const events = [...parseSGRMouseEvents('\x1b[<1;10;20M')];
+  expect(events[0].button).toBe('middle');
+});
+
+test('parseSGRMouseEvent should parse SGR right button press', () => {
+  const events = [...parseSGRMouseEvents('\x1b[<2;10;20M')];
+  expect(events[0].button).toBe('right');
+});
+
+test('parseSGRMouseEvent should parse SGR wheel left', () => {
+  const events = [...parseSGRMouseEvents('\x1b[<66;10;20M')];
+  expect(events[0].button).toBe('wheel-left');
+});
+
+test('parseSGRMouseEvent should parse SGR wheel right', () => {
+  const events = [...parseSGRMouseEvents('\x1b[<67;10;20M')];
+  expect(events[0].button).toBe('wheel-right');
+});
+
+test('parseSGRMouseEvent should parse SGR back button press', () => {
+  const events = [...parseSGRMouseEvents('\x1b[<128;10;20M')];
+  expect(events[0].button).toBe('back');
+});
+
+test('parseSGRMouseEvent should parse SGR forward button press', () => {
+  const events = [...parseSGRMouseEvents('\x1b[<129;10;20M')];
+  expect(events[0].button).toBe('forward');
+});
+
+test('parseSGRMouseEvent should handle unknown SGR button', () => {
+  const events = [...parseSGRMouseEvents('\x1b[<200;10;20M')];
+  expect(events[0].button).toBe('unknown');
+});
+
+test('parseESCMouseEvent should parse ESC middle button press', () => {
+  const events = [...parseESCMouseEvents('\x1b[M!#4')];
+  expect(events[0].button).toBe('middle');
+});
+
+test('parseESCMouseEvent should parse ESC right button press', () => {
+  const events = [...parseESCMouseEvents('\x1b[M"#4')];
+  expect(events[0].button).toBe('right');
+});
+
+test('parseESCMouseEvent should handle unknown ESC wheel', () => {
+  const events = [...parseESCMouseEvents('\x1b[M`#4')];
+  const wheelUp = [...parseESCMouseEvents('\x1b[Ma#4')];
+  expect(events[0].button).toBe('wheel-up');
+  expect(wheelUp[0].button).toBe('wheel-down');
+});
+
 test('parseSGRMouseEvent should parse SGR press event', () => {
   const events = [...parseSGRMouseEvents(SGR_PRESS_LEFT)];
   expect(events.length).toBe(1);

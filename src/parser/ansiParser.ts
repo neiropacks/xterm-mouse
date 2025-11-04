@@ -35,10 +35,7 @@ function decodeButtonESCBase(base: number): ButtonType {
     if ((base & 1) === 0) {
       return 'wheel-up';
     }
-    if ((base & 1) === 1) {
-      return 'wheel-down';
-    }
-    return 'unknown';
+    return 'wheel-down';
   }
 
   // For button press/release/move, the button is in the low two bits
@@ -53,7 +50,6 @@ function decodeButtonESCBase(base: number): ButtonType {
       // For release, or move without a button, the specific button is not indicated.
       return 'none';
   }
-  return 'unknown';
 }
 
 function* parseSGRMouseEvents(str: string): Generator<SGRMouseEvent> {
