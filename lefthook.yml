@@ -7,3 +7,5 @@ pre-commit:
     lint:
       glob: "*.{js,jsx,ts,tsx}"
       run: npx eslint --fix {staged_files}
+    typecheck:
+      run: bun run typecheck
