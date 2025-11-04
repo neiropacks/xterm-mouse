@@ -1,5 +1,8 @@
 # xterm-mouse - Bring mouse interaction to your Node.js terminal apps.
 
+> [!CAUTION]
+> This library is currently in its early stages of development. It is provided "as is" and its use is at your own risk. We welcome contributions! Feel free to open issues or submit pull requests.
+
 This library provides a simple way to capture and parse mouse events from xterm-compatible terminals in Node.js applications.
 
 ## Features
