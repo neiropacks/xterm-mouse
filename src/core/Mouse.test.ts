@@ -21,23 +21,39 @@ function makeFakeTTYStream(): ReadableStreamWithEncoding {
 }
 
 test('Mouse should be instantiable', () => {
+  // Arrange
   const mouse = new Mouse();
+  // Act
+
+  // Assert
   expect(mouse).toBeInstanceOf(Mouse);
 });
 
 test('Mouse enable/disable should work', () => {
+  // Arrange
   const mouse = new Mouse(makeFakeTTYStream());
+
+  // Act
   mouse.enable();
+
+  // Assert
   expect(mouse.isEnabled()).toBe(true);
+
+  // Act
   mouse.disable();
+
+  // Assert
   expect(mouse.isEnabled()).toBe(false);
 });
 
 test('Mouse should emit press event', (done) => {
+  // Arrange
   const emitter = new EventEmitter();
   const mouse = new Mouse(makeFakeTTYStream(), process.stdout, emitter);
 
+  // Act
   mouse.on('press', (event) => {
+    // Assert
     expect(event.action).toBe('press');
     expect(event.button).toBe('left');
     done();

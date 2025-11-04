@@ -19,61 +19,128 @@ const ESC_MOVE = '\x1b[MC#4'; // button 3 + motion, x=3, y=20
 
 // New tests for uncovered cases
 test('parseSGRMouseEvent should parse SGR middle button press', () => {
-  const events = [...parseSGRMouseEvents('\x1b[<1;10;20M')];
+  // Arrange
+  const input = '\x1b[<1;10;20M';
+
+  // Act
+  const events = [...parseSGRMouseEvents(input)];
+
+  // Assert
   expect(events[0]?.button).toBe('middle');
 });
 
 test('parseSGRMouseEvent should parse SGR right button press', () => {
-  const events = [...parseSGRMouseEvents('\x1b[<2;10;20M')];
+  // Arrange
+  const input = '\x1b[<2;10;20M';
+
+  // Act
+  const events = [...parseSGRMouseEvents(input)];
+
+  // Assert
   expect(events[0]?.button).toBe('right');
 });
 
 test('parseSGRMouseEvent should parse SGR wheel left', () => {
-  const events = [...parseSGRMouseEvents('\x1b[<66;10;20M')];
+  // Arrange
+  const input = '\x1b[<66;10;20M';
+
+  // Act
+  const events = [...parseSGRMouseEvents(input)];
+
+  // Assert
   expect(events[0]?.button).toBe('wheel-left');
 });
 
 test('parseSGRMouseEvent should parse SGR wheel right', () => {
-  const events = [...parseSGRMouseEvents('\x1b[<67;10;20M')];
+  // Arrange
+  const input = '\x1b[<67;10;20M';
+
+  // Act
+  const events = [...parseSGRMouseEvents(input)];
+
+  // Assert
   expect(events[0]?.button).toBe('wheel-right');
 });
 
 test('parseSGRMouseEvent should parse SGR back button press', () => {
-  const events = [...parseSGRMouseEvents('\x1b[<128;10;20M')];
+  // Arrange
+  const input = '\x1b[<128;10;20M';
+
+  // Act
+  const events = [...parseSGRMouseEvents(input)];
+
+  // Assert
   expect(events[0]?.button).toBe('back');
 });
 
 test('parseSGRMouseEvent should parse SGR forward button press', () => {
-  const events = [...parseSGRMouseEvents('\x1b[<129;10;20M')];
+  // Arrange
+  const input = '\x1b[<129;10;20M';
+
+  // Act
+  const events = [...parseSGRMouseEvents(input)];
+
+  // Assert
   expect(events[0]?.button).toBe('forward');
 });
 
 test('parseSGRMouseEvent should handle unknown SGR button', () => {
-  const events = [...parseSGRMouseEvents('\x1b[<200;10;20M')];
+  // Arrange
+  const input = '\x1b[<200;10;20M';
+
+  // Act
+  const events = [...parseSGRMouseEvents(input)];
+
+  // Assert
   expect(events[0]?.button).toBe('unknown');
 });
 
 test('parseESCMouseEvent should parse ESC middle button press', () => {
-  const events = [...parseESCMouseEvents('\x1b[M!#4')];
+  // Arrange
+  const input = '\x1b[M!#4';
+
+  // Act
+  const events = [...parseESCMouseEvents(input)];
+
+  // Assert
   expect(events[0]?.button).toBe('middle');
 });
 
 test('parseESCMouseEvent should parse ESC right button press', () => {
-  const events = [...parseESCMouseEvents('\x1b[M"#4')];
+  // Arrange
+  const input = '\x1b[M"#4';
+
+  // Act
+  const events = [...parseESCMouseEvents(input)];
+
+  // Assert
   expect(events[0]?.button).toBe('right');
 });
 
 test('parseESCMouseEvent should handle unknown ESC wheel', () => {
-  const events = [...parseESCMouseEvents('\x1b[M`#4')];
-  const wheelUp = [...parseESCMouseEvents('\x1b[Ma#4')];
-  expect(events[0]?.button).toBe('wheel-up');
-  expect(wheelUp[0]?.button).toBe('wheel-down');
+  // Arrange
+  const wheelUpInput = '\x1b[M`#4';
+  const wheelDownInput = '\x1b[Ma#4';
+
+  // Act
+  const wheelUpEvents = [...parseESCMouseEvents(wheelUpInput)];
+  const wheelDownEvents = [...parseESCMouseEvents(wheelDownInput)];
+
+  // Assert
+  expect(wheelUpEvents[0]?.button).toBe('wheel-up');
+  expect(wheelDownEvents[0]?.button).toBe('wheel-down');
 });
 
 test('parseSGRMouseEvent should parse SGR press event', () => {
-  const events = [...parseSGRMouseEvents(SGR_PRESS_LEFT)];
-  expect(events.length).toBe(1);
+  // Arrange
+  const input = SGR_PRESS_LEFT;
+
+  // Act
+  const events = [...parseSGRMouseEvents(input)];
   const event = events[0];
+
+  // Assert
+  expect(events.length).toBe(1);
   expect(event?.protocol).toBe('SGR');
   expect(event?.action).toBe('press');
   expect(event?.button).toBe('left');
@@ -85,9 +152,15 @@ test('parseSGRMouseEvent should parse SGR press event', () => {
 });
 
 test('parseSGRMouseEvent should parse SGR release event', () => {
-  const events = [...parseSGRMouseEvents(SGR_RELEASE)];
-  expect(events.length).toBe(1);
+  // Arrange
+  const input = SGR_RELEASE;
+
+  // Act
+  const events = [...parseSGRMouseEvents(input)];
   const event = events[0];
+
+  // Assert
+  expect(events.length).toBe(1);
   expect(event?.protocol).toBe('SGR');
   expect(event?.action).toBe('release');
   expect(event?.button).toBe('none');
@@ -96,9 +169,15 @@ test('parseSGRMouseEvent should parse SGR release event', () => {
 });
 
 test('parseSGRMouseEvent should parse SGR drag event', () => {
-  const events = [...parseSGRMouseEvents(SGR_DRAG_LEFT)];
-  expect(events.length).toBe(1);
+  // Arrange
+  const input = SGR_DRAG_LEFT;
+
+  // Act
+  const events = [...parseSGRMouseEvents(input)];
   const event = events[0];
+
+  // Assert
+  expect(events.length).toBe(1);
   expect(event?.protocol).toBe('SGR');
   expect(event?.action).toBe('drag');
   expect(event?.button).toBe('left');
@@ -107,9 +186,15 @@ test('parseSGRMouseEvent should parse SGR drag event', () => {
 });
 
 test('parseSGRMouseEvent should parse SGR wheel up event', () => {
-  const events = [...parseSGRMouseEvents(SGR_WHEEL_UP)];
-  expect(events.length).toBe(1);
+  // Arrange
+  const input = SGR_WHEEL_UP;
+
+  // Act
+  const events = [...parseSGRMouseEvents(input)];
   const event = events[0];
+
+  // Assert
+  expect(events.length).toBe(1);
   expect(event?.protocol).toBe('SGR');
   expect(event?.action).toBe('wheel');
   expect(event?.button).toBe('wheel-up');
@@ -118,9 +203,15 @@ test('parseSGRMouseEvent should parse SGR wheel up event', () => {
 });
 
 test('parseSGRMouseEvent should parse SGR wheel down event', () => {
-  const events = [...parseSGRMouseEvents(SGR_WHEEL_DOWN)];
-  expect(events.length).toBe(1);
+  // Arrange
+  const input = SGR_WHEEL_DOWN;
+
+  // Act
+  const events = [...parseSGRMouseEvents(input)];
   const event = events[0];
+
+  // Assert
+  expect(events.length).toBe(1);
   expect(event?.protocol).toBe('SGR');
   expect(event?.action).toBe('wheel');
   expect(event?.button).toBe('wheel-down');
@@ -129,9 +220,15 @@ test('parseSGRMouseEvent should parse SGR wheel down event', () => {
 });
 
 test('parseSGRMouseEvent should parse SGR move event', () => {
-  const events = [...parseSGRMouseEvents(SGR_MOVE)];
-  expect(events.length).toBe(1);
+  // Arrange
+  const input = SGR_MOVE;
+
+  // Act
+  const events = [...parseSGRMouseEvents(input)];
   const event = events[0];
+
+  // Assert
+  expect(events.length).toBe(1);
   expect(event?.protocol).toBe('SGR');
   expect(event?.action).toBe('move');
   expect(event?.button).toBe('none');
@@ -140,9 +237,15 @@ test('parseSGRMouseEvent should parse SGR move event', () => {
 });
 
 test('parseESCMouseEvent should parse ESC press event', () => {
-  const events = [...parseESCMouseEvents(ESC_PRESS_LEFT)];
-  expect(events.length).toBe(1);
+  // Arrange
+  const input = ESC_PRESS_LEFT;
+
+  // Act
+  const events = [...parseESCMouseEvents(input)];
   const event = events[0];
+
+  // Assert
+  expect(events.length).toBe(1);
   expect(event?.protocol).toBe('ESC');
   expect(event?.action).toBe('press');
   expect(event?.button).toBe('left');
@@ -151,9 +254,15 @@ test('parseESCMouseEvent should parse ESC press event', () => {
 });
 
 test('parseESCMouseEvent should parse ESC release event', () => {
-  const events = [...parseESCMouseEvents(ESC_RELEASE)];
-  expect(events.length).toBe(1);
+  // Arrange
+  const input = ESC_RELEASE;
+
+  // Act
+  const events = [...parseESCMouseEvents(input)];
   const event = events[0];
+
+  // Assert
+  expect(events.length).toBe(1);
   expect(event?.protocol).toBe('ESC');
   expect(event?.action).toBe('release');
   expect(event?.button).toBe('none');
@@ -162,9 +271,15 @@ test('parseESCMouseEvent should parse ESC release event', () => {
 });
 
 test('parseESCMouseEvent should parse ESC drag event', () => {
-  const events = [...parseESCMouseEvents(ESC_DRAG_LEFT)];
-  expect(events.length).toBe(1);
+  // Arrange
+  const input = ESC_DRAG_LEFT;
+
+  // Act
+  const events = [...parseESCMouseEvents(input)];
   const event = events[0];
+
+  // Assert
+  expect(events.length).toBe(1);
   expect(event?.protocol).toBe('ESC');
   expect(event?.action).toBe('drag');
   expect(event?.button).toBe('left');
@@ -173,9 +288,15 @@ test('parseESCMouseEvent should parse ESC drag event', () => {
 });
 
 test('parseESCMouseEvent should parse ESC wheel up event', () => {
-  const events = [...parseESCMouseEvents(ESC_WHEEL_UP)];
-  expect(events.length).toBe(1);
+  // Arrange
+  const input = ESC_WHEEL_UP;
+
+  // Act
+  const events = [...parseESCMouseEvents(input)];
   const event = events[0];
+
+  // Assert
+  expect(events.length).toBe(1);
   expect(event?.protocol).toBe('ESC');
   expect(event?.action).toBe('wheel');
   expect(event?.button).toBe('wheel-up');
@@ -184,9 +305,15 @@ test('parseESCMouseEvent should parse ESC wheel up event', () => {
 });
 
 test('parseESCMouseEvent should parse ESC wheel down event', () => {
-  const events = [...parseESCMouseEvents(ESC_WHEEL_DOWN)];
-  expect(events.length).toBe(1);
+  // Arrange
+  const input = ESC_WHEEL_DOWN;
+
+  // Act
+  const events = [...parseESCMouseEvents(input)];
   const event = events[0];
+
+  // Assert
+  expect(events.length).toBe(1);
   expect(event?.protocol).toBe('ESC');
   expect(event?.action).toBe('wheel');
   expect(event?.button).toBe('wheel-down');
@@ -195,9 +322,15 @@ test('parseESCMouseEvent should parse ESC wheel down event', () => {
 });
 
 test('parseESCMouseEvent should parse ESC move event', () => {
-  const events = [...parseESCMouseEvents(ESC_MOVE)];
-  expect(events.length).toBe(1);
+  // Arrange
+  const input = ESC_MOVE;
+
+  // Act
+  const events = [...parseESCMouseEvents(input)];
   const event = events[0];
+
+  // Assert
+  expect(events.length).toBe(1);
   expect(event?.protocol).toBe('ESC');
   expect(event?.action).toBe('move');
   expect(event?.button).toBe('none');
@@ -206,18 +339,36 @@ test('parseESCMouseEvent should parse ESC move event', () => {
 });
 
 test('parseMouseEvent should return an empty array for invalid input', () => {
-  const events = [...parseMouseEvents('invalid string')];
+  // Arrange
+  const input = 'invalid string';
+
+  // Act
+  const events = [...parseMouseEvents(input)];
+
+  // Assert
   expect(events).toEqual([]);
 });
 
 test('parseMouseEvent should parse SGR event', () => {
-  const events = [...parseMouseEvents(SGR_PRESS_LEFT)];
+  // Arrange
+  const input = SGR_PRESS_LEFT;
+
+  // Act
+  const events = [...parseMouseEvents(input)];
+
+  // Assert
   expect(events.length).toBe(1);
   expect(events[0]?.protocol).toBe('SGR');
 });
 
 test('parseMouseEvent should parse ESC event', () => {
-  const events = [...parseMouseEvents(ESC_PRESS_LEFT)];
+  // Arrange
+  const input = ESC_PRESS_LEFT;
+
+  // Act
+  const events = [...parseMouseEvents(input)];
+
+  // Assert
   expect(events.length).toBe(1);
   expect(events[0]?.protocol).toBe('ESC');
 });
