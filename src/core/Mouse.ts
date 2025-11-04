@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 
 import { ANSI_CODES } from '../parser/constants';
-import { parseMouseEvent } from '../parser/ansiParser';
+import { parseMouseEvents } from '../parser/ansiParser';
 import type { MouseEvent, MouseEventAction, ReadableStreamWithEncoding } from '../types';
 
 class Mouse {
@@ -17,13 +17,10 @@ class Mouse {
 
   private handleEvent = (data: Buffer): void => {
     try {
-      const events = parseMouseEvent(data.toString());
-      if (!events) {
-        return;
-      }
-      events.forEach((event) => {
+      const events = parseMouseEvents(data.toString());
+      for (const event of events) {
         this.emitter.emit(event.action, event);
-      });
+      }
     } catch (err) {
       this.emitter.emit('error', err);
     }
