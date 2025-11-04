@@ -9,14 +9,14 @@ const main = async (): Promise<void> => {
   console.log('Starting to stream all mouse events. Press any key to stop.');
 
   // Example of using the stream() method
-  const streamPromise = (async (): Promise<void> => {
+  const _streamPromise = (async (): Promise<void> => {
     for await (const { type, event } of mouse.stream()) {
       console.log(`Stream Event: type=${type}, event=${JSON.stringify(event)}`);
     }
   })();
 
   // Example of using the eventsOf() method for a specific event type
-  const eventsOfPromise = (async (): Promise<void> => {
+  const _eventsOfPromise = (async (): Promise<void> => {
     for await (const event of mouse.eventsOf('press')) {
       console.log(`eventsOf('press') Event: ${JSON.stringify(event)}`);
     }

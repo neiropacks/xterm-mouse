@@ -50,6 +50,7 @@ function decodeButtonESCBase(base: number): ButtonType {
       // For release, or move without a button, the specific button is not indicated.
       return 'none';
   }
+  return 'unknown';
 }
 
 function* parseSGRMouseEvents(str: string): Generator<SGRMouseEvent> {
