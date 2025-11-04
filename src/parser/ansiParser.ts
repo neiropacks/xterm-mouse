@@ -56,7 +56,7 @@ function decodeButtonESCBase(base: number): ButtonType {
   return 'unknown';
 }
 
-function* parseSGRMouseEvent(str: string): Generator<SGRMouseEvent> {
+function* parseSGRMouseEvents(str: string): Generator<SGRMouseEvent> {
   // SGR (1006)
   const events = str.matchAll(ANSI_RESPONSE_PATTERNS.sgrPattern);
 
@@ -105,7 +105,7 @@ function* parseSGRMouseEvent(str: string): Generator<SGRMouseEvent> {
   }
 }
 
-function* parseESCMouseEvent(str: string): Generator<ESCMouseEvent> {
+function* parseESCMouseEvents(str: string): Generator<ESCMouseEvent> {
   // ESC (1000/1002/1003) — old format
   const events = str.matchAll(ANSI_RESPONSE_PATTERNS.escPattern);
 
@@ -152,18 +152,17 @@ function* parseESCMouseEvent(str: string): Generator<ESCMouseEvent> {
   }
 }
 
-function parseMouseEvent(data: string): Generator<SGRMouseEvent | ESCMouseEvent> | null {
-  const sgrEvent = parseSGRMouseEvent(data);
-  if (sgrEvent) {
-    return sgrEvent;
+function* parseMouseEvents(data: string): Generator<SGRMouseEvent | ESCMouseEvent> {
+  const sgrGenerator = parseSGRMouseEvents(data);
+  const sgrResult = sgrGenerator.next();
+
+  if (!sgrResult.done) {
+    yield sgrResult.value;
+    yield* sgrGenerator;
+    return;
   }
 
-  const escEvent = parseESCMouseEvent(data);
-  if (escEvent) {
-    return escEvent;
-  }
-
-  return null;
+  yield* parseESCMouseEvents(data);
 }
 
-export { parseMouseEvent, parseSGRMouseEvent, parseESCMouseEvent };
+export { parseMouseEvents, parseSGRMouseEvents, parseESCMouseEvents };
