@@ -9,6 +9,37 @@ This library provides a simple way to capture and parse mouse events from xterm-
 *   Provides parsed mouse event data including button, action, coordinates, and modifier keys (Shift, Alt, Ctrl).
 *   Offers a streaming API with `eventsOf` and `stream` methods for asynchronous iteration over mouse events.
 
+## API
+
+### Mouse Events
+
+The `Mouse` instance emits the following events:
+
+*   `press`: A mouse button is pressed.
+*   `release`: A mouse button is released.
+*   `wheel`: The mouse wheel is scrolled.
+*   `move`: The mouse is moved.
+*   `drag`: The mouse is moved while a button is pressed.
+
+### Event Object Structure
+
+The event object passed to the event listeners has the following structure:
+
+```typescript
+{
+  x: number, // The x coordinate of the mouse
+  y: number, // The y coordinate of the mouse
+  button: 'none' | 'left' | 'middle' | 'right' | 'wheel-up' | 'wheel-down' | 'wheel-left' | 'wheel-right' | 'back' | 'forward' | 'unknown', // The button that was pressed
+  action: 'move' | 'release' | 'press' | 'drag' | 'wheel', // The action that was performed
+  shift: boolean, // Whether the shift key was pressed
+  alt: boolean, // Whether the alt key was pressed
+  ctrl: boolean, // Whether the ctrl key was pressed
+  raw: number, // The raw event code
+  data: string, // The raw event data
+  protocol: 'SGR' | 'ESC' // The mouse protocol used
+}
+```
+
 ## Getting Started
 
 ### Installation
@@ -86,7 +117,11 @@ const main = async (): Promise<void> => {
 main().catch(console.error);
 ```
 
-## Available Commands
+## For Developers
+
+This section provides information for developers who want to contribute to or build upon `xterm-mouse`.
+
+### Available Commands
 
 *   **`bun run build`**: Compiles the TypeScript code into JavaScript and generates type declaration files.
 *   **`bun run lint`**: Runs ESLint and Biome checks to identify code quality issues.
@@ -95,11 +130,3 @@ main().catch(console.error);
 *   **`bun run biome:check`**: Runs Biome checks and applies unsafe fixes.
 *   **`bun run dev:basic`**: Runs the basic example with hot-reloading.
 *   **`bun run dev:streaming`**: Runs the streaming example with hot-reloading.
-
-## Publishing to npm
-
-This template is configured to publish to npm automatically when a version tag (e.g., `v1.0.0`) is pushed to the `main` branch.
-
-**Important:**
-*   Ensure you have set up an `NPM_TOKEN` secret in your GitHub repository settings with a valid npm automation token.
-*   Remember to update the package name in `package.json` before publishing.
