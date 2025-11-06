@@ -31,12 +31,13 @@ function makeFakeTTYStream(): ReadableStreamWithEncoding {
   const originalOn = fake.on.bind(fake);
   const originalOff = fake.off.bind(fake);
 
+  // biome-ignore lint/suspicious/noExplicitAny: original EventEmitter methods
   fake.on = (event: string, listener: (...args: any[]) => void): ReadableStreamWithEncoding => {
     originalOn(event, listener);
     return fake;
   };
 
-  fake.off = (event: string, listener: (...args: any[]) => void): ReadableStreamWithEncoding => {
+  fake.off = (event: string, listener: (...args: unknown[]) => void): ReadableStreamWithEncoding => {
     originalOff(event, listener);
     return fake;
   };
@@ -197,7 +198,7 @@ test('Mouse handleEvent should emit error when event emission fails', (done) => 
 
   // Replace emit with a version that throws an error on the second call
   // First call will be for the 'press' event, second will be for 'error'
-  mockEmitter.emit = (event: string, ...args: any[]): boolean => {
+  mockEmitter.emit = (event: string, ...args: unknown[]): boolean => {
     emitCallCount++;
     if (event === 'press' && emitCallCount === 1) {
       // On the first call (the press event), throw an error to trigger the catch block
@@ -246,7 +247,7 @@ test('Mouse enable should handle errors during setup from outputStream.write', (
   // Arrange: Create a stream that will fail during outputStream.write
   const stream = makeFakeTTYStream();
   const mockOutputStream = {
-    write: (chunk: any, encoding?: BufferEncoding, cb?: (error?: Error | null) => void): boolean => {
+    write: (_chunk: unknown, _encoding?: BufferEncoding, _cb?: (error?: Error | null) => void): boolean => {
       throw new Error('Write failed');
     },
     cork: () => {},
