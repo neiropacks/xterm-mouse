@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 
-import { expect, test } from 'bun:test';
+import { expect, test, mock } from 'bun:test';
 
 import type { ReadableStreamWithEncoding } from '../types';
 
@@ -505,6 +505,58 @@ test('Mouse.eventsOf() should handle errors', async () => {
 
   // Cleanup
   await iterator.return(undefined);
+  mouse.destroy();
+});
+
+test('Mouse should emit click event', async () => {
+  // Arrange
+  const stream = makeFakeTTYStream();
+  const mouse = new Mouse(stream);
+  const pressEvent = '\x1b[<0;10;20M';
+  const releaseEvent = '\x1b[<0;10;20m';
+
+  const eventPromise = new Promise<void>((resolve) => {
+    mouse.on('click', (event) => {
+      // Assert
+      expect(event.action).toBe('click');
+      expect(event.button).toBe('left');
+      expect(event.x).toBe(10);
+      expect(event.y).toBe(20);
+      resolve();
+    });
+  });
+
+  // Act
+  mouse.enable();
+  stream.emit('data', Buffer.from(pressEvent));
+  stream.emit('data', Buffer.from(releaseEvent));
+
+  await eventPromise;
+
+  // Cleanup
+  mouse.destroy();
+});
+
+test('Mouse should not emit click event if distance is too large', async () => {
+  // Arrange
+  const stream = makeFakeTTYStream();
+  const mouse = new Mouse(stream);
+  const pressEvent = '\x1b[<0;10;20M';
+  const releaseEvent = '\x1b[<0;15;25m';
+
+  const clickSpy = mock(() => {});
+  mouse.on('click', clickSpy);
+
+  // Act
+  mouse.enable();
+  stream.emit('data', Buffer.from(pressEvent));
+  stream.emit('data', Buffer.from(releaseEvent));
+
+  // Assert
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  expect(clickSpy).not.toHaveBeenCalled();
+
+  // Cleanup
   mouse.destroy();
 });
 

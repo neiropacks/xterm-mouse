@@ -8,6 +8,7 @@ class Mouse {
   private enabled = false;
   private previousEncoding: BufferEncoding | null = null;
   private previousRawMode: boolean | null = null;
+  private lastPress: MouseEvent | null = null;
 
   constructor(
     private inputStream: ReadableStreamWithEncoding = process.stdin,
@@ -20,6 +21,23 @@ class Mouse {
       const events = parseMouseEvents(data.toString());
       for (const event of events) {
         this.emitter.emit(event.action, event);
+
+        if (event.action === 'press') {
+          this.lastPress = event;
+        } else if (event.action === 'release') {
+          if (this.lastPress) {
+            const xDiff = Math.abs(event.x - this.lastPress.x);
+            const yDiff = Math.abs(event.y - this.lastPress.y);
+
+            if (xDiff <= 1 && yDiff <= 1) {
+              const clickEvent: MouseEvent = { ...event, action: 'click' };
+              process.nextTick(() => {
+                this.emitter.emit('click', clickEvent);
+              });
+            }
+          }
+          this.lastPress = null;
+        }
       }
     } catch (err) {
       this.emitter.emit('error', err);

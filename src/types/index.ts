@@ -13,7 +13,7 @@ export type ButtonType =
   | 'forward'
   | 'unknown';
 
-export type MouseEventAction = 'move' | 'release' | 'press' | 'drag' | 'wheel';
+export type MouseEventAction = 'move' | 'release' | 'press' | 'drag' | 'wheel' | 'click';
 
 export type MouseEventBase = {
   x: number;

@@ -20,6 +20,7 @@ The `Mouse` instance emits the following events:
 
 *   `press`: A mouse button is pressed.
 *   `release`: A mouse button is released.
+*   `click`: A mouse button is pressed and released within a small area.
 *   `wheel`: The mouse wheel is scrolled.
 *   `move`: The mouse is moved.
 *   `drag`: The mouse is moved while a button is pressed.
@@ -33,7 +34,7 @@ The event object passed to the event listeners has the following structure:
   x: number, // The x coordinate of the mouse
   y: number, // The y coordinate of the mouse
   button: 'none' | 'left' | 'middle' | 'right' | 'wheel-up' | 'wheel-down' | 'wheel-left' | 'wheel-right' | 'back' | 'forward' | 'unknown', // The button that was pressed
-  action: 'move' | 'release' | 'press' | 'drag' | 'wheel', // The action that was performed
+  action: 'move' | 'release' | 'press' | 'drag' | 'wheel' | 'click', // The action that was performed
   shift: boolean, // Whether the shift key was pressed
   alt: boolean, // Whether the alt key was pressed
   ctrl: boolean, // Whether the ctrl key was pressed
@@ -68,6 +69,10 @@ console.log("Enabling mouse tracking... Press 'q' to exit.");
 
 mouse.on('press', (event) => {
   console.log('Press event:', JSON.stringify(event));
+});
+
+mouse.on('click', (event) => {
+  console.log('Click event:', JSON.stringify(event));
 });
 
 mouse.enable();
