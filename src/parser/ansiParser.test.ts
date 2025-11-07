@@ -198,4 +198,18 @@ describe('Coverage-specific tests', () => {
     const events = [...parseMouseEvents(input)];
     expect(events.length).toBe(0);
   });
+
+  test('should ignore non-mouse ANSI events and other characters', () => {
+    const SGR_PRESS = '\x1b[<0;10;20M';
+    const ARROW_UP = '\x1b[A';
+    const CHAR_A = 'a';
+    const SGR_WHEEL = '\x1b[<64;10;20M';
+
+    const input = `${SGR_PRESS}${ARROW_UP}${CHAR_A}${SGR_WHEEL}`;
+    const events = [...parseMouseEvents(input)];
+
+    expect(events.length).toBe(2);
+    expect(events[0]?.button).toBe('left');
+    expect(events[1]?.button).toBe('wheel-up');
+  });
 });
