@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 
 import { ANSI_CODES } from '../parser/constants';
 import { parseMouseEvents } from '../parser/ansiParser';
-import type { MouseEvent, MouseEventAction, ReadableStreamWithEncoding } from '../types';
+import { MouseError, type MouseEvent, type MouseEventAction, type ReadableStreamWithEncoding } from '../types';
 
 /**
  * Represents and manages mouse events in a TTY environment.
@@ -84,7 +84,10 @@ class Mouse {
       this.inputStream.on('data', this.handleEvent);
     } catch (err) {
       this.enabled = false;
-      throw new Error(`Failed to enable mouse: ${err instanceof Error ? err.message : String(err)}`);
+      throw new MouseError(
+        `Failed to enable mouse: ${err instanceof Error ? err.message : String(err)}`,
+        err instanceof Error ? err : undefined,
+      );
     }
   };
 
@@ -113,7 +116,10 @@ class Mouse {
         ANSI_CODES.mouseSGR.off + ANSI_CODES.mouseMotion.off + ANSI_CODES.mouseDrag.off + ANSI_CODES.mouseButton.off,
       );
     } catch (err) {
-      this.emitter.emit('error', err);
+      throw new MouseError(
+        `Failed to disable mouse: ${err instanceof Error ? err.message : String(err)}`,
+        err instanceof Error ? err : undefined,
+      );
     } finally {
       this.enabled = false;
       this.previousRawMode = null;
@@ -163,6 +169,7 @@ class Mouse {
     }
 
     const queue: MouseEvent[] = [];
+    const errorQueue: Error[] = [];
     const finalMaxQueue = Math.min(maxQueue, 1000);
     let latest: MouseEvent | null = null;
     let resolveNext: ((value: MouseEvent) => void) | null = null;
@@ -173,6 +180,7 @@ class Mouse {
         resolveNext(ev);
         resolveNext = null;
         rejectNext = null;
+        latest = null;
       } else if (latestOnly) {
         latest = ev;
       } else {
@@ -182,18 +190,24 @@ class Mouse {
     };
 
     const errorHandler = (err: Error): void => {
+      const mouseError = new MouseError(`Error in mouse event stream: ${err.message}`, err);
       if (rejectNext) {
-        rejectNext(err);
+        rejectNext(mouseError);
         resolveNext = null;
         rejectNext = null;
+      } else {
+        errorQueue.push(mouseError);
       }
     };
 
     const abortHandler = (): void => {
+      const err = new MouseError('The operation was aborted.');
       if (rejectNext) {
-        rejectNext(new Error('The operation was aborted.'));
+        rejectNext(err);
         resolveNext = null;
         rejectNext = null;
+      } else {
+        errorQueue.push(err);
       }
     };
 
@@ -204,7 +218,11 @@ class Mouse {
     try {
       while (true) {
         if (signal?.aborted) {
-          throw new Error('The operation was aborted.');
+          throw new MouseError('The operation was aborted.');
+        }
+
+        if (errorQueue.length > 0) {
+          throw errorQueue.shift();
         }
 
         if (queue.length > 0) {
@@ -253,6 +271,7 @@ class Mouse {
     }
 
     const queue: { type: MouseEventAction; event: MouseEvent }[] = [];
+    const errorQueue: Error[] = [];
     let latest: { type: MouseEventAction; event: MouseEvent } | null = null;
     let resolveNext: ((value: { type: MouseEventAction; event: MouseEvent }) => void) | null = null;
     let rejectNext: ((err: Error) => void) | null = null;
@@ -268,6 +287,7 @@ class Mouse {
           resolveNext(wrapped);
           resolveNext = null;
           rejectNext = null;
+          latest = null;
         } else if (latestOnly) {
           latest = wrapped;
         } else {
@@ -281,19 +301,25 @@ class Mouse {
     });
 
     const errorHandler = (err: Error): void => {
+      const mouseError = new MouseError(`Error in mouse event stream: ${err.message}`, err);
       if (rejectNext) {
-        rejectNext(err);
+        rejectNext(mouseError);
         resolveNext = null;
         rejectNext = null;
+      } else {
+        errorQueue.push(mouseError);
       }
     };
     this.emitter.on('error', errorHandler);
 
     const abortHandler = (): void => {
+      const err = new MouseError('The operation was aborted.');
       if (rejectNext) {
-        rejectNext(new Error('The operation was aborted.'));
+        rejectNext(err);
         resolveNext = null;
         rejectNext = null;
+      } else {
+        errorQueue.push(err);
       }
     };
     signal?.addEventListener('abort', abortHandler);
@@ -301,7 +327,11 @@ class Mouse {
     try {
       while (true) {
         if (signal?.aborted) {
-          throw new Error('The operation was aborted.');
+          throw new MouseError('The operation was aborted.');
+        }
+
+        if (errorQueue.length > 0) {
+          throw errorQueue.shift();
         }
 
         if (queue.length > 0) {

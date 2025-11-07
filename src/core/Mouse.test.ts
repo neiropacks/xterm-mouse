@@ -289,7 +289,7 @@ test('Mouse enable should handle errors during setup from setRawMode', () => {
   mouse.destroy();
 });
 
-test('Mouse disable should emit error when an error occurs', (done) => {
+test('Mouse.disable() should throw MouseError when an error occurs', () => {
   // Arrange: Create a stream where outputStream.write will fail
   const stream = makeFakeTTYStream();
   const mockOutputStream = {
@@ -303,20 +303,14 @@ test('Mouse disable should emit error when an error occurs', (done) => {
     },
   } as NodeJS.WriteStream;
 
-  const emitter = new EventEmitter();
-  const mouse = new Mouse(stream, mockOutputStream, emitter);
+  const mouse = new Mouse(stream, mockOutputStream);
 
   mouse.enable();
 
-  // Listen for the error event that should be emitted from the catch block in disable
-  emitter.on('error', (err) => {
-    expect(err).toBeDefined();
-    expect((err as Error).message).toBe('Write failed during disable');
-    done();
-  });
-
-  // Act: This should trigger the error in the disable method
-  mouse.disable();
+  // Act & Assert: This should trigger the error in the disable method
+  expect(() => {
+    mouse.disable();
+  }).toThrow('Failed to disable mouse: Write failed during disable');
 });
 
 test('Mouse eventsOf should use queue when multiple events arrive', async () => {
@@ -464,7 +458,7 @@ test('Mouse stream should use latestOnly option', async () => {
   mouse.destroy();
 });
 
-test('Mouse.disable() should not throw when an error occurs', (done) => {
+test('Mouse.disable() should throw MouseError when an error occurs', () => {
   // Arrange
   const stream = makeFakeTTYStream();
   const mockOutputStream = {
@@ -476,18 +470,13 @@ test('Mouse.disable() should not throw when an error occurs', (done) => {
       return true;
     },
   } as NodeJS.WriteStream;
-  const emitter = new EventEmitter();
-  const mouse = new Mouse(stream, mockOutputStream, emitter);
+  const mouse = new Mouse(stream, mockOutputStream);
   mouse.enable();
 
-  // Act
-  emitter.on('error', (err) => {
-    // Assert
-    expect(err).toBeInstanceOf(Error);
-    expect((err as Error).message).toBe('Write failed');
-    done();
-  });
-  mouse.disable();
+  // Act & Assert
+  expect(() => {
+    mouse.disable();
+  }).toThrow('Failed to disable mouse: Write failed');
 });
 
 test('Mouse.eventsOf() should handle errors', async () => {
@@ -502,7 +491,7 @@ test('Mouse.eventsOf() should handle errors', async () => {
   emitter.emit('error', error);
 
   // Assert
-  await expect(promise).rejects.toThrow(error);
+  await expect(promise).rejects.toThrow('Error in mouse event stream: Test error');
 
   // Cleanup
   await iterator.return(undefined);
@@ -573,7 +562,7 @@ test('Mouse.stream() should handle errors', async () => {
   emitter.emit('error', error);
 
   // Assert
-  await expect(promise).rejects.toThrow(error);
+  await expect(promise).rejects.toThrow('Error in mouse event stream: Test error');
 
   // Cleanup
   await iterator.return(undefined);
