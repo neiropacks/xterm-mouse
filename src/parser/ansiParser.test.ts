@@ -85,6 +85,24 @@ test('parseMouseEvents should correctly parse a single ESC wheel down event', ()
   expect(event?.button).toBe('wheel-down');
 });
 
+test('parseMouseEvents should correctly parse a single ESC wheel left event', () => {
+  const events = [...parseMouseEvents('\x1b[MbSJ')]; // 'b'.charCodeAt(0) - 32 = 66
+  expect(events.length).toBe(1);
+  const event = events[0];
+  expect(event?.protocol).toBe('ESC');
+  expect(event?.action).toBe('wheel');
+  expect(event?.button).toBe('wheel-left');
+});
+
+test('parseMouseEvents should correctly parse a single ESC wheel right event', () => {
+  const events = [...parseMouseEvents('\x1b[McSJ')]; // 'c'.charCodeAt(0) - 32 = 67
+  expect(events.length).toBe(1);
+  const event = events[0];
+  expect(event?.protocol).toBe('ESC');
+  expect(event?.action).toBe('wheel');
+  expect(event?.button).toBe('wheel-right');
+});
+
 test('parseMouseEvents should handle multiple, concatenated events', () => {
   const input = SGR_PRESS_LEFT + SGR_WHEEL_UP + ESC_PRESS_RIGHT + SGR_RELEASE_LEFT;
   const events = [...parseMouseEvents(input)];

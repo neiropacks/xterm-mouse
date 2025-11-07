@@ -1,5 +1,7 @@
 import type { ButtonType, SGRMouseEvent, ESCMouseEvent, MouseEventAction } from '../types';
 
+import { ANSI_RESPONSE_PATTERNS } from './constants.ts';
+
 function decodeSGRButton(code: number): { button: ButtonType; action: MouseEventAction } {
   const motion = !!(code & 32);
   // Modifier bits for shift, alt, ctrl, and motion
@@ -62,7 +64,23 @@ function decodeESCButton(code: number): { button: ButtonType; action: MouseEvent
   let button: ButtonType;
   if (code & 64) {
     // Wheel event
-    button = (code & 1) === 0 ? 'wheel-up' : 'wheel-down';
+    switch (code) {
+      case 64:
+        button = 'wheel-up';
+        break;
+      case 65:
+        button = 'wheel-down';
+        break;
+      case 66:
+        button = 'wheel-left';
+        break;
+      case 67:
+        button = 'wheel-right';
+        break;
+      default:
+        button = 'unknown'; // Fallback for unknown wheel codes
+        break;
+    }
   } else {
     // Button event
     switch (code & 3) {
@@ -87,31 +105,30 @@ function decodeESCButton(code: number): { button: ButtonType; action: MouseEvent
   let action: MouseEventAction;
   if (motion) {
     action = button === 'none' ? 'move' : 'drag';
+  } else if (button.startsWith('wheel-')) {
+    action = 'wheel';
   } else if ((code & 3) === 3) {
     action = 'release';
   } else {
-    action = button.startsWith('wheel-') ? 'wheel' : 'press';
+    action = 'press';
   }
 
   return { button, action };
 }
 
-// biome-ignore lint/suspicious/noControlCharactersInRegex: mouse events
-const SGR_MOUSE_REGEX = /^\x1b\[<(\d+);(\d+);(\d+)([Mm])/;
-
 function parseSGRMouseEvent(data: string, start: number): [SGRMouseEvent | null, number] {
-  const match = data.substring(start).match(SGR_MOUSE_REGEX);
+  const match = data.substring(start).match(ANSI_RESPONSE_PATTERNS.sgrPattern);
 
   if (!match) {
     return [null, start + 1];
   }
 
-  const [fullMatch, bStr, xStr, yStr, terminator] = match;
+  const [fullMatch, bStr, xStr, yStr, terminator] = match as [string, string, string, string, string];
   const isRelease = terminator === 'm';
 
-  const b = parseInt(bStr!, 10);
-  const x = parseInt(xStr!, 10);
-  const y = parseInt(yStr!, 10);
+  const b = parseInt(bStr, 10);
+  const x = parseInt(xStr, 10);
+  const y = parseInt(yStr, 10);
 
   if (Number.isNaN(b) || Number.isNaN(x) || Number.isNaN(y)) {
     return [null, start + 1];
@@ -135,21 +152,18 @@ function parseSGRMouseEvent(data: string, start: number): [SGRMouseEvent | null,
   return [event, start + fullMatch.length];
 }
 
-// biome-ignore lint/suspicious/noControlCharactersInRegex: mouse events
-const ESC_MOUSE_REGEX = /^\x1b\[M(.)(.)(.)/;
-
 function parseESCMouseEvent(data: string, start: number): [ESCMouseEvent | null, number] {
-  const match = data.substring(start).match(ESC_MOUSE_REGEX);
+  const match = data.substring(start).match(ANSI_RESPONSE_PATTERNS.escPattern);
 
   if (!match) {
     return [null, start + 1];
   }
 
-  const [fullMatch, bChar, xChar, yChar] = match;
+  const [fullMatch, bChar, xChar, yChar] = match as [string, string, string, string];
 
-  const cb = bChar!.charCodeAt(0) - 32;
-  const cx = xChar!.charCodeAt(0) - 32;
-  const cy = yChar!.charCodeAt(0) - 32;
+  const cb = bChar.charCodeAt(0) - 32;
+  const cx = xChar.charCodeAt(0) - 32;
+  const cy = yChar.charCodeAt(0) - 32;
 
   const { button, action } = decodeESCButton(cb);
 
