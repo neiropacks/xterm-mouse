@@ -601,6 +601,57 @@ test('Mouse.eventsOf() should be cancellable with AbortSignal', async () => {
   }
 });
 
+test('Mouse.stream() should handle high event volume without significant delay', async () => {
+  // Arrange
+  const stream = makeFakeTTYStream();
+  const mouse = new Mouse(stream);
+  const iterator = mouse.stream();
+  const eventCount = 10_000;
+  const timeThreshold = 1000; // Increased to 1s, as the test is now more realistic
+
+  try {
+    mouse.enable();
+
+    // Act
+    const startTime = performance.now();
+
+    // Consumer promise
+    const consumePromise = (async (): Promise<void> => {
+      let consumedCount = 0;
+      for await (const _ of iterator) {
+        consumedCount++;
+        if (consumedCount === eventCount) {
+          break;
+        }
+      }
+    })();
+
+    // Asynchronous emitter promise
+    const emitPromise = (async (): Promise<void> => {
+      for (let i = 0; i < eventCount; i++) {
+        stream.emit('data', Buffer.from(`\x1b[<0;${i % 200};${i % 100}M`));
+        // Yield to the event loop every 100 events to allow the consumer to process
+        if (i % 100 === 0) {
+          await Bun.sleep(0);
+        }
+      }
+    })();
+
+    await Promise.all([consumePromise, emitPromise]);
+
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+
+    // Assert
+    console.log(`Processed ${eventCount} events in ${duration.toFixed(2)}ms`);
+    expect(duration).toBeLessThan(timeThreshold);
+  } finally {
+    // Cleanup
+    await iterator.return(undefined);
+    mouse.destroy();
+  }
+}, 15000);
+
 test('Mouse.stream() should be cancellable with AbortSignal', async () => {
   // Arrange
   const mouse = new Mouse(makeFakeTTYStream());
