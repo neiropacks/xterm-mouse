@@ -1,165 +1,214 @@
 import type { ButtonType, SGRMouseEvent, ESCMouseEvent, MouseEventAction } from '../types';
 
-import { ANSI_RESPONSE_PATTERNS } from './constants';
+function decodeSGRButton(code: number): { button: ButtonType; action: MouseEventAction } {
+  const buttonCode = code & 0b1111111; // Extract button and wheel info
+  const motion = !!(code & 32);
 
-function decodeButtonSGRBase(base: number): ButtonType {
-  switch (base) {
+  let button: ButtonType;
+  switch (buttonCode) {
     case 0:
-      return 'left';
+      button = 'left';
+      break;
     case 1:
-      return 'middle';
+      button = 'middle';
+      break;
     case 2:
-      return 'right';
+      button = 'right';
+      break;
     case 3:
-      return 'none';
+      button = 'none';
+      break;
     case 64:
-      return 'wheel-up';
+      button = 'wheel-up';
+      break;
     case 65:
-      return 'wheel-down';
+      button = 'wheel-down';
+      break;
     case 66:
-      return 'wheel-left';
+      button = 'wheel-left';
+      break;
     case 67:
-      return 'wheel-right';
+      button = 'wheel-right';
+      break;
     case 128:
-      return 'back';
+      button = 'back';
+      break;
     case 129:
-      return 'forward';
+      button = 'forward';
+      break;
     default:
-      return 'unknown';
+      button = 'unknown';
+      break;
   }
+
+  let action: MouseEventAction;
+  if (motion) {
+    action = button === 'none' ? 'move' : 'drag';
+  } else if (button.startsWith('wheel-')) {
+    action = 'wheel';
+  } else {
+    // For SGR, release is indicated by the 'm' terminator, not the button code
+    action = 'press';
+  }
+
+  return { button, action };
 }
 
-function decodeButtonESCBase(base: number): ButtonType {
-  // For wheel events, the button code is in the low bits, but the type is wheel
-  if (base & 64) {
-    if ((base & 1) === 0) {
-      return 'wheel-up';
+function decodeESCButton(code: number): { button: ButtonType; action: MouseEventAction } {
+  const motion = !!(code & 32);
+
+  let button: ButtonType;
+  if (code & 64) {
+    // Wheel event
+    button = (code & 1) === 0 ? 'wheel-up' : 'wheel-down';
+  } else {
+    // Button event
+    switch (code & 3) {
+      case 0:
+        button = 'left';
+        break;
+      case 1:
+        button = 'middle';
+        break;
+      case 2:
+        button = 'right';
+        break;
+      case 3:
+        button = 'none';
+        break;
+      default:
+        button = 'unknown';
+        break;
     }
-    return 'wheel-down';
   }
 
-  // For button press/release/move, the button is in the low two bits
-  switch (base & 3) {
-    case 0:
-      return 'left';
-    case 1:
-      return 'middle';
-    case 2:
-      return 'right';
-    case 3:
-      // For release, or move without a button, the specific button is not indicated.
-      return 'none';
+  let action: MouseEventAction;
+  if (motion) {
+    action = button === 'none' ? 'move' : 'drag';
+  } else if ((code & 3) === 3) {
+    action = 'release';
+  } else {
+    action = button.startsWith('wheel-') ? 'wheel' : 'press';
   }
-  return 'unknown';
+
+  return { button, action };
 }
 
-function* parseSGRMouseEvents(str: string): Generator<SGRMouseEvent> {
-  // SGR (1006)
-  const events = str.matchAll(ANSI_RESPONSE_PATTERNS.sgrPattern);
+function parseSGRMouseEvent(data: string, start: number): [SGRMouseEvent | null, number] {
+  const endM = data.indexOf('M', start + 3);
+  const endm = data.indexOf('m', start + 3);
 
-  // run‑length deduplication algo
-  let prevEvent: string = '';
-  for (const m of events) {
-    if (!m || m[0] === prevEvent || m[1] === undefined || m[2] === undefined || m[3] === undefined) {
-      continue;
-    }
-    prevEvent = m[0];
+  let end = -1;
+  let isRelease = false;
 
-    const b = parseInt(m[1], 10);
-    const x = parseInt(m[2], 10);
-    const y = parseInt(m[3], 10);
-    const type = m[4];
-
-    const shift = !!(b & 4);
-    const alt = !!(b & 8);
-    const ctrl = !!(b & 16);
-    const motion = !!(b & 32);
-
-    const base = b & ~(4 | 8 | 16 | 32);
-    const button = decodeButtonSGRBase(base);
-
-    let action: MouseEventAction;
-    if (motion) {
-      action = button === 'none' ? 'move' : 'drag';
-    } else if (type === 'm' || base === 3) {
-      action = 'release';
+  if (endM !== -1 && endm !== -1) {
+    if (endM < endm) {
+      end = endM;
     } else {
-      action = button.startsWith('wheel-') ? 'wheel' : 'press';
+      end = endm;
+      isRelease = true;
     }
-
-    yield {
-      protocol: 'SGR',
-      x,
-      y,
-      button,
-      action,
-      shift,
-      alt,
-      ctrl,
-      raw: b,
-      data: m[0].slice(3),
-    };
+  } else if (endM !== -1) {
+    end = endM;
+  } else if (endm !== -1) {
+    end = endm;
+    isRelease = true;
+  } else {
+    return [null, start + 1]; // No terminator found
   }
+
+  const sequence = data.substring(start + 3, end);
+  const parts = sequence.split(';');
+
+  const bStr = parts[0];
+  const xStr = parts[1];
+  const yStr = parts[2];
+
+  if (bStr === undefined || xStr === undefined || yStr === undefined) {
+    return [null, end + 1];
+  }
+
+  const b = parseInt(bStr, 10);
+  const x = parseInt(xStr, 10);
+  const y = parseInt(yStr, 10);
+
+  if (Number.isNaN(b) || Number.isNaN(x) || Number.isNaN(y)) {
+    return [null, end + 1];
+  }
+
+  const { button, action } = decodeSGRButton(b);
+
+  const event: SGRMouseEvent = {
+    protocol: 'SGR',
+    x,
+    y,
+    button,
+    action: isRelease ? 'release' : action,
+    shift: !!(b & 4),
+    alt: !!(b & 8),
+    ctrl: !!(b & 16),
+    raw: b,
+    data: sequence + (isRelease ? 'm' : 'M'),
+  };
+
+  return [event, end + 1];
 }
 
-function* parseESCMouseEvents(str: string): Generator<ESCMouseEvent> {
-  // ESC (1000/1002/1003) — old format
-  const events = str.matchAll(ANSI_RESPONSE_PATTERNS.escPattern);
-
-  // run‑length deduplication algo
-  let prevEvent: string = '';
-  for (const m of events) {
-    if (!m || m[0] === prevEvent || m[1] === undefined || m[2] === undefined || m[3] === undefined) {
-      continue;
-    }
-    prevEvent = m[0];
-
-    const cb = m[1].charCodeAt(0) - 32;
-    const cx = m[2].charCodeAt(0) - 32;
-    const cy = m[3].charCodeAt(0) - 32;
-
-    const shift = !!(cb & 4);
-    const alt = !!(cb & 8);
-    const ctrl = !!(cb & 16);
-    const motion = !!(cb & 32);
-
-    const button = decodeButtonESCBase(cb);
-
-    let action: MouseEventAction;
-    if (motion) {
-      action = button === 'none' ? 'move' : 'drag';
-    } else if ((cb & 3) === 3) {
-      action = 'release';
-    } else {
-      action = button.startsWith('wheel-') ? 'wheel' : 'press';
-    }
-
-    yield {
-      protocol: 'ESC',
-      x: cx,
-      y: cy,
-      button,
-      action,
-      shift,
-      alt,
-      ctrl,
-      raw: cb,
-      data: m[0].slice(2),
-    };
+function parseESCMouseEvent(data: string, start: number): [ESCMouseEvent | null, number] {
+  if (start + 5 >= data.length) {
+    return [null, data.length]; // Not enough data for a full ESC sequence
   }
+
+  const cb = data.charCodeAt(start + 3) - 32;
+  const cx = data.charCodeAt(start + 4) - 32;
+  const cy = data.charCodeAt(start + 5) - 32;
+
+  const { button, action } = decodeESCButton(cb);
+
+  const event: ESCMouseEvent = {
+    protocol: 'ESC',
+    x: cx,
+    y: cy,
+    button,
+    action,
+    shift: !!(cb & 4),
+    alt: !!(cb & 8),
+    ctrl: !!(cb & 16),
+    raw: cb,
+    data: data.substring(start + 3, start + 6),
+  };
+
+  return [event, start + 6];
 }
 
 function* parseMouseEvents(data: string): Generator<SGRMouseEvent | ESCMouseEvent> {
-  const sgrGenerator = parseSGRMouseEvents(data);
-  const sgrResult = sgrGenerator.next();
+  let i = 0;
+  while (i < data.length) {
+    const escIndex = data.indexOf('\x1b[', i);
+    if (escIndex === -1) {
+      break;
+    }
 
-  if (!sgrResult.done) {
-    yield sgrResult.value;
-    yield* sgrGenerator;
-    return;
+    i = escIndex;
+    let event: SGRMouseEvent | ESCMouseEvent | null = null;
+    let nextIndex: number;
+
+    if (data[i + 2] === '<') {
+      // Potential SGR event
+      [event, nextIndex] = parseSGRMouseEvent(data, i);
+    } else if (data[i + 2] === 'M') {
+      // Potential ESC event
+      [event, nextIndex] = parseESCMouseEvent(data, i);
+    } else {
+      // Unrecognized escape sequence, skip it
+      nextIndex = i + 1;
+    }
+
+    if (event) {
+      yield event;
+    }
+    i = nextIndex;
   }
-
-  yield* parseESCMouseEvents(data);
 }
 
-export { parseMouseEvents, parseSGRMouseEvents, parseESCMouseEvents };
+export { parseMouseEvents };
