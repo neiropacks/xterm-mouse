@@ -6,11 +6,7 @@ on:
       - 'v*.*.*'
 
 jobs:
-  changelog:
-    uses: ./.github/workflows/changelog.yml
-
   publish:
-    needs: changelog
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,8 +28,11 @@ jobs:
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+  changelog:
+    uses: ./.github/workflows/changelog.yml
+
   release:
-    needs: publish
+    needs: changelog
     runs-on: ubuntu-latest
     permissions:
       contents: write
