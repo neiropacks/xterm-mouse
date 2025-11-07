@@ -146,7 +146,7 @@ class Mouse {
    * @param type The type of mouse event to listen for.
    * @param options Configuration for the event stream.
    * @param options.latestOnly If true, only the latest event is buffered. Defaults to false.
-   * @param options.maxQueue The maximum number of events to queue. Defaults to 1000.
+   * @param options.maxQueue The maximum number of events to queue. Defaults to 100, with a maximum of 1000.
    * @param options.signal An AbortSignal to cancel the async generator.
    * @yields {MouseEvent} A mouse event object.
    */
@@ -154,7 +154,7 @@ class Mouse {
     type: MouseEventAction,
     {
       latestOnly = false,
-      maxQueue = 1000,
+      maxQueue = 100,
       signal,
     }: { latestOnly?: boolean; maxQueue?: number; signal?: AbortSignal } = {},
   ): AsyncGenerator<MouseEvent> {
@@ -163,6 +163,7 @@ class Mouse {
     }
 
     const queue: MouseEvent[] = [];
+    const finalMaxQueue = Math.min(maxQueue, 1000);
     let latest: MouseEvent | null = null;
     let resolveNext: ((value: MouseEvent) => void) | null = null;
     let rejectNext: ((err: Error) => void) | null = null;
@@ -175,7 +176,7 @@ class Mouse {
       } else if (latestOnly) {
         latest = ev;
       } else {
-        if (queue.length >= maxQueue) queue.shift();
+        if (queue.length >= finalMaxQueue) queue.shift();
         queue.push(ev);
       }
     };
