@@ -125,6 +125,54 @@ const main = async (): Promise<void> => {
 main().catch(console.error);
 ```
 
+### Advanced Async Iterator Control
+
+The `stream()` and `eventsOf()` methods accept an options object for more advanced control over the async iterators.
+
+#### Cancelling with AbortSignal
+
+You can provide an `AbortSignal` to gracefully terminate an async iterator. This is useful for cleanup and resource management, especially in long-running applications.
+
+```typescript
+import { Mouse } from '@neiropacks/xterm-mouse';
+
+const mouse = new Mouse();
+const controller = new AbortController();
+
+const main = async (): Promise<void> => {
+  mouse.enable();
+
+  console.log('Streaming press events for 5 seconds...');
+
+  try {
+    for await (const event of mouse.eventsOf('press', { signal: controller.signal })) {
+      console.log(`Press event: ${JSON.stringify(event)}`);
+    }
+  } catch (error) {
+    // The AbortError will be thrown here when the signal is aborted.
+    console.log('Stream was cancelled.', error.message);
+  }
+};
+
+main().catch(console.error);
+
+// Stop the stream after 5 seconds.
+setTimeout(() => {
+  controller.abort();
+  mouse.disable();
+}, 5000);
+```
+
+#### Performance Tuning
+
+The options object also allows you to control the behavior of the event queue:
+
+*   `maxQueue: number` (default: `1000`)
+    The maximum number of events to hold in the queue. If the queue is full and a new event arrives, the oldest event is dropped. This prevents memory leaks in scenarios with high event throughput.
+
+*   `latestOnly: boolean` (default: `false`)
+    If set to `true`, the queue will only store the most recent event, discarding any previous ones. This is useful when you only care about the latest state (e.g., for mouse position) and not the intermediate events.
+
 ## For Developers
 
 ### Project Status

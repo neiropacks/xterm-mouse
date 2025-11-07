@@ -24,6 +24,10 @@ mouse.on('wheel', (event) => {
   console.log('Wheel event:', JSON.stringify(event));
 });
 
+mouse.on('click', (event) => {
+  console.log('Click event:', JSON.stringify(event));
+});
+
 mouse.enable();
 
 process.stdin.on('data', (data) => {

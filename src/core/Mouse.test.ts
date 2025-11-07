@@ -579,3 +579,45 @@ test('Mouse.stream() should handle errors', async () => {
   await iterator.return(undefined);
   mouse.destroy();
 });
+
+test('Mouse.eventsOf() should be cancellable with AbortSignal', async () => {
+  // Arrange
+  const mouse = new Mouse(makeFakeTTYStream());
+  const controller = new AbortController();
+  const iterator = mouse.eventsOf('press', { signal: controller.signal });
+
+  try {
+    mouse.enable();
+
+    // Act
+    const promise = iterator.next();
+    controller.abort();
+
+    // Assert
+    await expect(promise).rejects.toThrow('The operation was aborted.');
+  } finally {
+    // Cleanup
+    mouse.destroy();
+  }
+});
+
+test('Mouse.stream() should be cancellable with AbortSignal', async () => {
+  // Arrange
+  const mouse = new Mouse(makeFakeTTYStream());
+  const controller = new AbortController();
+  const iterator = mouse.stream({ signal: controller.signal });
+
+  try {
+    mouse.enable();
+
+    // Act
+    const promise = iterator.next();
+    controller.abort();
+
+    // Assert
+    await expect(promise).rejects.toThrow('The operation was aborted.');
+  } finally {
+    // Cleanup
+    mouse.destroy();
+  }
+});

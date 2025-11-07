@@ -4,12 +4,22 @@ import { ANSI_CODES } from '../parser/constants';
 import { parseMouseEvents } from '../parser/ansiParser';
 import type { MouseEvent, MouseEventAction, ReadableStreamWithEncoding } from '../types';
 
+/**
+ * Represents and manages mouse events in a TTY environment.
+ * It captures mouse events by controlling the input stream and parsing ANSI escape codes.
+ */
 class Mouse {
   private enabled = false;
   private previousEncoding: BufferEncoding | null = null;
   private previousRawMode: boolean | null = null;
   private lastPress: MouseEvent | null = null;
 
+  /**
+   * Constructs a new Mouse instance.
+   * @param inputStream The readable stream to listen for mouse events on (defaults to process.stdin).
+   * @param outputStream The writable stream to send control sequences to (defaults to process.stdout).
+   * @param emitter The event emitter to use for emitting mouse events (defaults to a new EventEmitter).
+   */
   constructor(
     private inputStream: ReadableStreamWithEncoding = process.stdin,
     private outputStream: NodeJS.WriteStream = process.stdout,
@@ -44,6 +54,11 @@ class Mouse {
     }
   };
 
+  /**
+   * Enables mouse event tracking.
+   * This method puts the input stream into raw mode and starts listening for data.
+   * It will throw an error if the input stream is not a TTY.
+   */
   public enable = (): void => {
     if (this.enabled) {
       return;
@@ -73,6 +88,10 @@ class Mouse {
     }
   };
 
+  /**
+   * Disables mouse event tracking.
+   * This method restores the input stream to its previous state and stops listening for data.
+   */
   public disable = (): void => {
     if (!this.enabled) {
       return;
@@ -102,18 +121,47 @@ class Mouse {
     }
   };
 
+  /**
+   * Registers a listener for a specific mouse event.
+   * @param event The name of the event to listen for.
+   * @param listener The callback function to execute when the event is triggered.
+   * @returns The event emitter instance.
+   */
   public on = (event: MouseEventAction | 'error', listener: (event: MouseEvent) => void): EventEmitter => {
     return this.emitter.on(event, listener);
   };
 
+  /**
+   * Removes a listener for a specific mouse event.
+   * @param event The name of the event to stop listening for.
+   * @param listener The callback function to remove.
+   * @returns The event emitter instance.
+   */
   public off = (event: MouseEventAction | 'error', listener: (event: MouseEvent) => void): EventEmitter => {
     return this.emitter.off(event, listener);
   };
 
+  /**
+   * Returns an async generator that yields mouse events of a specific type.
+   * @param type The type of mouse event to listen for.
+   * @param options Configuration for the event stream.
+   * @param options.latestOnly If true, only the latest event is buffered. Defaults to false.
+   * @param options.maxQueue The maximum number of events to queue. Defaults to 1000.
+   * @param options.signal An AbortSignal to cancel the async generator.
+   * @yields {MouseEvent} A mouse event object.
+   */
   public async *eventsOf(
     type: MouseEventAction,
-    { latestOnly = false, maxQueue = 100 }: { latestOnly?: boolean; maxQueue?: number } = {},
+    {
+      latestOnly = false,
+      maxQueue = 1000,
+      signal,
+    }: { latestOnly?: boolean; maxQueue?: number; signal?: AbortSignal } = {},
   ): AsyncGenerator<MouseEvent> {
+    if (signal?.aborted) {
+      throw new Error('The operation was aborted.');
+    }
+
     const queue: MouseEvent[] = [];
     let latest: MouseEvent | null = null;
     let resolveNext: ((value: MouseEvent) => void) | null = null;
@@ -140,11 +188,24 @@ class Mouse {
       }
     };
 
+    const abortHandler = (): void => {
+      if (rejectNext) {
+        rejectNext(new Error('The operation was aborted.'));
+        resolveNext = null;
+        rejectNext = null;
+      }
+    };
+
     this.emitter.on(type, handler);
     this.emitter.on('error', errorHandler);
+    signal?.addEventListener('abort', abortHandler);
 
     try {
       while (true) {
+        if (signal?.aborted) {
+          throw new Error('The operation was aborted.');
+        }
+
         if (queue.length > 0) {
           const event = queue.shift();
           if (event) {
@@ -164,16 +225,32 @@ class Mouse {
     } finally {
       this.emitter.off(type, handler);
       this.emitter.off('error', errorHandler);
+      signal?.removeEventListener('abort', abortHandler);
     }
   }
 
+  /**
+   * Returns an async generator that yields all mouse events.
+   * Each yielded value is an object containing the event type and the event data.
+   * @param options Configuration for the event stream.
+   * @param options.latestOnly If true, only the latest event is buffered. Defaults to false.
+   * @param options.maxQueue The maximum number of events to queue. Defaults to 1000.
+   * @param options.signal An AbortSignal to cancel the async generator.
+   * @yields {{ type: MouseEventAction; event: MouseEvent }} An object with the event type and data.
+   */
   public async *stream({
     latestOnly = false,
-    maxQueue = 100,
+    maxQueue = 1000,
+    signal,
   }: {
     latestOnly?: boolean;
     maxQueue?: number;
+    signal?: AbortSignal;
   } = {}): AsyncGenerator<{ type: MouseEventAction; event: MouseEvent }> {
+    if (signal?.aborted) {
+      throw new Error('The operation was aborted.');
+    }
+
     const queue: { type: MouseEventAction; event: MouseEvent }[] = [];
     let latest: { type: MouseEventAction; event: MouseEvent } | null = null;
     let resolveNext: ((value: { type: MouseEventAction; event: MouseEvent }) => void) | null = null;
@@ -211,8 +288,21 @@ class Mouse {
     };
     this.emitter.on('error', errorHandler);
 
+    const abortHandler = (): void => {
+      if (rejectNext) {
+        rejectNext(new Error('The operation was aborted.'));
+        resolveNext = null;
+        rejectNext = null;
+      }
+    };
+    signal?.addEventListener('abort', abortHandler);
+
     try {
       while (true) {
+        if (signal?.aborted) {
+          throw new Error('The operation was aborted.');
+        }
+
         if (queue.length > 0) {
           const event = queue.shift();
           if (event) {
@@ -237,13 +327,22 @@ class Mouse {
         }
       });
       this.emitter.off('error', errorHandler);
+      signal?.removeEventListener('abort', abortHandler);
     }
   }
 
+  /**
+   * Checks if mouse event tracking is currently enabled.
+   * @returns {boolean} True if enabled, false otherwise.
+   */
   public isEnabled(): boolean {
     return this.enabled;
   }
 
+  /**
+   * Disables mouse tracking and removes all event listeners.
+   * This is a cleanup method to ensure no resources are left hanging.
+   */
   public destroy(): void {
     this.disable();
     this.emitter.removeAllListeners();
