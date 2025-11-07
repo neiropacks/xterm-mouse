@@ -96,46 +96,25 @@ function decodeESCButton(code: number): { button: ButtonType; action: MouseEvent
   return { button, action };
 }
 
+// biome-ignore lint/suspicious/noControlCharactersInRegex: mouse events
+const SGR_MOUSE_REGEX = /^\x1b\[<(\d+);(\d+);(\d+)([Mm])/;
+
 function parseSGRMouseEvent(data: string, start: number): [SGRMouseEvent | null, number] {
-  const endM = data.indexOf('M', start + 3);
-  const endm = data.indexOf('m', start + 3);
+  const match = data.substring(start).match(SGR_MOUSE_REGEX);
 
-  let end = -1;
-  let isRelease = false;
-
-  if (endM !== -1 && endm !== -1) {
-    if (endM < endm) {
-      end = endM;
-    } else {
-      end = endm;
-      isRelease = true;
-    }
-  } else if (endM !== -1) {
-    end = endM;
-  } else if (endm !== -1) {
-    end = endm;
-    isRelease = true;
-  } else {
-    return [null, start + 1]; // No terminator found
+  if (!match) {
+    return [null, start + 1];
   }
 
-  const sequence = data.substring(start + 3, end);
-  const parts = sequence.split(';');
+  const [fullMatch, bStr, xStr, yStr, terminator] = match;
+  const isRelease = terminator === 'm';
 
-  const bStr = parts[0];
-  const xStr = parts[1];
-  const yStr = parts[2];
-
-  if (bStr === undefined || xStr === undefined || yStr === undefined) {
-    return [null, end + 1];
-  }
-
-  const b = parseInt(bStr, 10);
-  const x = parseInt(xStr, 10);
-  const y = parseInt(yStr, 10);
+  const b = parseInt(bStr!, 10);
+  const x = parseInt(xStr!, 10);
+  const y = parseInt(yStr!, 10);
 
   if (Number.isNaN(b) || Number.isNaN(x) || Number.isNaN(y)) {
-    return [null, end + 1];
+    return [null, start + 1];
   }
 
   const { button, action } = decodeSGRButton(b);
@@ -150,20 +129,27 @@ function parseSGRMouseEvent(data: string, start: number): [SGRMouseEvent | null,
     alt: !!(b & 8),
     ctrl: !!(b & 16),
     raw: b,
-    data: sequence + (isRelease ? 'm' : 'M'),
+    data: fullMatch,
   };
 
-  return [event, end + 1];
+  return [event, start + fullMatch.length];
 }
 
+// biome-ignore lint/suspicious/noControlCharactersInRegex: mouse events
+const ESC_MOUSE_REGEX = /^\x1b\[M(.)(.)(.)/;
+
 function parseESCMouseEvent(data: string, start: number): [ESCMouseEvent | null, number] {
-  if (start + 5 >= data.length) {
-    return [null, data.length]; // Not enough data for a full ESC sequence
+  const match = data.substring(start).match(ESC_MOUSE_REGEX);
+
+  if (!match) {
+    return [null, start + 1];
   }
 
-  const cb = data.charCodeAt(start + 3) - 32;
-  const cx = data.charCodeAt(start + 4) - 32;
-  const cy = data.charCodeAt(start + 5) - 32;
+  const [fullMatch, bChar, xChar, yChar] = match;
+
+  const cb = bChar!.charCodeAt(0) - 32;
+  const cx = xChar!.charCodeAt(0) - 32;
+  const cy = yChar!.charCodeAt(0) - 32;
 
   const { button, action } = decodeESCButton(cb);
 
@@ -177,14 +163,16 @@ function parseESCMouseEvent(data: string, start: number): [ESCMouseEvent | null,
     alt: !!(cb & 8),
     ctrl: !!(cb & 16),
     raw: cb,
-    data: data.substring(start + 3, start + 6),
+    data: fullMatch,
   };
 
-  return [event, start + 6];
+  return [event, start + fullMatch.length];
 }
 
 function* parseMouseEvents(data: string): Generator<SGRMouseEvent | ESCMouseEvent> {
   let i = 0;
+  let lastEventData: string | null = null;
+
   while (i < data.length) {
     const escIndex = data.indexOf('\x1b[', i);
     if (escIndex === -1) {
@@ -203,11 +191,15 @@ function* parseMouseEvents(data: string): Generator<SGRMouseEvent | ESCMouseEven
       [event, nextIndex] = parseESCMouseEvent(data, i);
     } else {
       // Unrecognized escape sequence, skip it
-      nextIndex = i + 1;
+      nextIndex = i + 2;
     }
 
     if (event) {
-      yield event;
+      // Implement run-length deduplication
+      if (event.data !== lastEventData) {
+        yield event;
+        lastEventData = event.data;
+      }
     }
     i = nextIndex;
   }

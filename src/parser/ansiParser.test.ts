@@ -199,7 +199,7 @@ describe('Coverage-specific tests', () => {
     expect(events.length).toBe(0);
   });
 
-  test('should ignore non-mouse ANSI events and other characters', () => {
+  test('parseMouseEvents should ignore non-mouse ANSI events and other characters', () => {
     const SGR_PRESS = '\x1b[<0;10;20M';
     const ARROW_UP = '\x1b[A';
     const CHAR_A = 'a';
@@ -211,5 +211,29 @@ describe('Coverage-specific tests', () => {
     expect(events.length).toBe(2);
     expect(events[0]?.button).toBe('left');
     expect(events[1]?.button).toBe('wheel-up');
+  });
+
+  test('parseMouseEvents should perform run-length deduplication', () => {
+    const SGR_EVENT_1 = '\x1b[<0;10;20M';
+    const SGR_EVENT_2 = '\x1b[<1;11;21M';
+    const ESC_EVENT_1 = '\x1b[M #4'; // button 0, x=3, y=20
+
+    const input =
+      SGR_EVENT_1 + // First unique event
+      SGR_EVENT_1 + // Duplicate, should be ignored
+      SGR_EVENT_1 + // Duplicate, should be ignored
+      SGR_EVENT_2 + // New unique event
+      SGR_EVENT_2 + // Duplicate, should be ignored
+      ESC_EVENT_1 + // New unique event
+      SGR_EVENT_1; // New unique event (different from previous ESC_EVENT_1)
+
+    const events = [...parseMouseEvents(input)];
+
+    expect(events.length).toBe(4); // SGR_EVENT_1, SGR_EVENT_2, ESC_EVENT_1, SGR_EVENT_1
+
+    expect(events[0]?.data).toBe(SGR_EVENT_1);
+    expect(events[1]?.data).toBe(SGR_EVENT_2);
+    expect(events[2]?.data).toBe(ESC_EVENT_1);
+    expect(events[3]?.data).toBe(SGR_EVENT_1);
   });
 });
