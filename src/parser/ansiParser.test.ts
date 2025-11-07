@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test';
+import { expect, test, describe } from 'bun:test';
 
 import { parseMouseEvents } from './ansiParser';
 
@@ -147,4 +147,55 @@ test('parseMouseEvents should handle all ESC variations', () => {
     expect(events.length).toBe(1);
     expect(events[0]?.protocol).toBe('ESC');
   }
+});
+
+describe('Coverage-specific tests', () => {
+  test('should parse SGR right-click', () => {
+    const events = [...parseMouseEvents('\x1b[<2;10;20M')];
+    expect(events[0]?.button).toBe('right');
+  });
+
+  test('should parse SGR back button', () => {
+    const events = [...parseMouseEvents('\x1b[<128;10;20M')];
+    expect(events[0]?.button).toBe('back');
+  });
+
+  test('should parse SGR forward button', () => {
+    const events = [...parseMouseEvents('\x1b[<129;10;20M')];
+    expect(events[0]?.button).toBe('forward');
+  });
+
+  test('should handle unknown SGR button', () => {
+    const events = [...parseMouseEvents('\x1b[<200;10;20M')];
+    expect(events[0]?.button).toBe('unknown');
+  });
+
+  test('should handle unknown ESC button', () => {
+    // ESC button codes are masked, so we need a value that doesn't map to left/middle/right
+    // 0b01000111 -> char 'G' -> cb 39. & 3 = 3 (none), & 64 = 0. This will be 'none'.
+    // To hit unknown, we need a logic branch that is not possible with current decode.
+    // The default 'unknown' in decodeESCButton is unreachable because of the switch on `code & 3`.
+    // We will test the 'none' case which was also uncovered.
+    const events = [...parseMouseEvents('\x1b[M#  ')]; // cb = 35 -> &3 = 3 -> 'none'
+    expect(events[0]?.button).toBe('none');
+  });
+
+  test('should skip unrecognized escape sequences', () => {
+    const input = `\x1b[2J${SGR_PRESS_LEFT}`;
+    const events = [...parseMouseEvents(input)];
+    expect(events.length).toBe(1);
+    expect(events[0]?.button).toBe('left');
+  });
+
+  test('should handle input with no escape sequences', () => {
+    const input = 'hello world';
+    const events = [...parseMouseEvents(input)];
+    expect(events.length).toBe(0);
+  });
+
+  test('should handle incomplete SGR sequence', () => {
+    const input = '\x1b[<0;10;';
+    const events = [...parseMouseEvents(input)];
+    expect(events.length).toBe(0);
+  });
 });

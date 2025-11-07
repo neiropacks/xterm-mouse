@@ -1,8 +1,10 @@
 import type { ButtonType, SGRMouseEvent, ESCMouseEvent, MouseEventAction } from '../types';
 
 function decodeSGRButton(code: number): { button: ButtonType; action: MouseEventAction } {
-  const buttonCode = code & 0b1111111; // Extract button and wheel info
   const motion = !!(code & 32);
+  // Modifier bits for shift, alt, ctrl, and motion
+  const modifierBits = 4 | 8 | 16 | 32;
+  const buttonCode = code & ~modifierBits; // Isolate the actual button code
 
   let button: ButtonType;
   switch (buttonCode) {
