@@ -10,7 +10,7 @@ jobs:
     uses: ./.github/workflows/changelog.yml
 
   release:
-    needs: changelog
+    needs: publish
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -22,7 +22,7 @@ jobs:
           make_latest: true
 
   publish:
-    needs: release
+    needs: changelog
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
