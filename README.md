@@ -44,6 +44,9 @@ The event object passed to the event listeners has the following structure:
 }
 ```
 
+> [!NOTE]
+> If the terminal does not support SGR mode, the coordinates are limited to a maximum of 95. This is a limitation of the older ESC-based protocol.
+
 ## Getting Started
 
 ### Installation
